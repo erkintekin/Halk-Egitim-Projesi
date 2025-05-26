@@ -1,0 +1,464 @@
+# main.py
+import sys
+import psycopg2
+from PyQt5.QtWidgets import (
+    QApplication, QMainWindow, QWidget, QVBoxLayout, QTabWidget,
+    QLabel, QPushButton, QLineEdit, QTableWidget, QTableWidgetItem,
+    QMessageBox, QTextEdit, QComboBox, QGroupBox, QFormLayout
+)
+
+DB_PARAMS = {
+    "host": "localhost",
+    "database": "halk_egitim_db",
+    "user": "postgres",
+    "password": "12345",
+    "port": "5432"
+}
+
+def execute_function(query, params=()):
+    try:
+        conn = psycopg2.connect(**DB_PARAMS)
+        cur = conn.cursor()
+        cur.execute(query, params)
+        conn.commit()
+        cur.close()
+        conn.close()
+        return True, "İşlem başarılı."
+    except psycopg2.Error as e:
+        return False, e.diag.message_primary
+
+def fetch_uzmanliklar():
+    query = "SELECT ad FROM uzmanlik ORDER BY ad"
+    return [row[0] for row in fetch_function(query)]
+
+def fetch_function(query, params=()):
+    try:
+        conn = psycopg2.connect(**DB_PARAMS)
+        cur = conn.cursor()
+        cur.execute(query, params)
+        rows = cur.fetchall()
+        cur.close()
+        conn.close()
+        return rows
+    except Exception as e:
+        print("HATA:", e)
+        return []
+
+class MainWindow(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("Halk Eğitim Takip Sistemi")
+        self.setGeometry(200, 100, 1000, 600)
+
+        self.tabs = QTabWidget()
+        self.setCentralWidget(self.tabs)
+
+        self.kursiyer_tab = self.create_kursiyer_tab()
+        self.egitimci_tab = self.create_egitimci_tab()
+        self.kurs_tab = self.create_kurs_tab()
+        self.devamsizlik_tab = self.create_devamsizlik_tab()
+        self.kayit_guncelle_tab = self.create_kayit_guncelleme_tab()
+
+        self.tabs.addTab(self.kursiyer_tab, "Kursiyer")
+        self.tabs.addTab(self.egitimci_tab, "Eğitimci")
+        self.tabs.addTab(self.kurs_tab, "Kurs")
+        self.tabs.addTab(self.devamsizlik_tab, "Devamsızlık")
+        self.tabs.addTab(self.kayit_guncelle_tab, "Kayıt/Güncelleme")
+
+    # === Kursiyer Sekmesi ===
+    def create_kursiyer_tab(self):
+        tab = QWidget()
+        layout = QVBoxLayout()
+
+        self.k_ad = QLineEdit()
+        self.k_soyad = QLineEdit()
+        self.k_tc = QLineEdit()
+        self.k_dogum = QLineEdit()
+        self.k_tel = QLineEdit()
+        self.k_email = QLineEdit()
+        self.k_adres = QTextEdit()
+        add_button = QPushButton("Kursiyer Kaydet")
+        add_button.clicked.connect(self.add_kursiyer)
+
+        form_layout = QVBoxLayout()
+        for label, widget in [
+            ("Ad", self.k_ad), ("Soyad", self.k_soyad), ("TC Kimlik No", self.k_tc),
+            ("Doğum Tarihi (YYYY-AA-GG)", self.k_dogum), ("Telefon", self.k_tel),
+            ("Email", self.k_email), ("Adres", self.k_adres)
+        ]:
+            form_layout.addWidget(QLabel(label))
+            form_layout.addWidget(widget)
+        form_layout.addWidget(add_button)
+
+        self.kursiyer_table = QTableWidget()
+        listele_btn = QPushButton("Kursiyerleri Listele")
+        listele_btn.clicked.connect(self.list_kursiyer)
+
+        sil_btn = QPushButton("Seçili Kursiyeri Sil")
+        sil_btn.clicked.connect(self.kursiyer_sil)
+
+        layout.addLayout(form_layout)
+        layout.addWidget(listele_btn)
+        layout.addWidget(sil_btn)
+        layout.addWidget(self.kursiyer_table)
+        tab.setLayout(layout)
+        return tab
+
+    def add_kursiyer(self):
+        tc = self.k_tc.text().strip()
+        email = self.k_email.text().strip()
+
+        if not all([
+            self.k_ad.text().strip(),
+            self.k_soyad.text().strip(),
+            tc,
+            email
+        ]):
+            QMessageBox.warning(self, "Hata", "Tüm zorunlu alanları doldurmalısınız.")
+            return
+
+        if not tc.isdigit() or len(tc) != 11:
+            QMessageBox.warning(self, "Hata", "TC Kimlik Numarası 11 haneli rakamlardan oluşmalıdır.")
+            return
+
+        if "@" not in email:
+            QMessageBox.warning(self, "Hata", "Geçerli bir e-posta adresi giriniz.")
+            return
+
+        query = "SELECT kursiyer_kaydet(%s, %s, %s, %s, %s, %s, %s)"
+        params = (
+            tc,
+            self.k_ad.text(),
+            self.k_soyad.text(),
+            self.k_dogum.text(),
+            self.k_tel.text(),
+            email,
+            self.k_adres.toPlainText()
+        )
+        success, message = execute_function(query, params)
+        QMessageBox.information(self, "Bilgi", message)
+
+        self.yenile_kursiyer_combo(self.combo_kursiyer_devamsizlik)
+        self.yenile_kursiyer_combo(self.combo_kursiyer_kayit)
+
+    def kursiyer_sil(self):
+        selected = self.kursiyer_table.currentRow()
+        if selected < 0:
+            QMessageBox.warning(self, "Uyarı", "Lütfen silinecek kursiyeri seçin.")
+            return
+        kursiyer_id = self.kursiyer_table.item(selected, 0).text()
+        confirm = QMessageBox.question(
+            self, "Onay", f"Kursiyer ID {kursiyer_id} silinsin mi?",
+            QMessageBox.Yes | QMessageBox.No
+        )
+        if confirm == QMessageBox.Yes:
+            query = "SELECT kursiyer_sil(%s)"  # Eğer fonksiyonla yapıyorsan
+            success, message = execute_function(query, (kursiyer_id,))
+            if success:
+                QMessageBox.information(self, "Bilgi", "Kursiyer silindi.")
+                self.list_kursiyer()
+                # dropdown’ları da yenile
+                self.yenile_kursiyer_combo(self.combo_kursiyer_devamsizlik)
+            else:
+                QMessageBox.critical(self, "Hata", message)
+
+    def list_kursiyer(self):
+        query = "SELECT * FROM kursiyer_listele()"
+        rows = fetch_function(query)
+        self.kursiyer_table.setRowCount(len(rows))
+        self.kursiyer_table.setColumnCount(len(rows[0]) if rows else 0)
+        self.kursiyer_table.setHorizontalHeaderLabels([
+            "ID", "Ad", "Soyad", "TC", "Tel", "Email", "Adres", "Kayıt Tarihi"])
+        for row_idx, row in enumerate(rows):
+            for col_idx, value in enumerate(row):
+                self.kursiyer_table.setItem(row_idx, col_idx, QTableWidgetItem(str(value)))
+
+    # === Eğitimci Sekmesi ===
+    def create_egitimci_tab(self):
+        tab = QWidget()
+        layout = QVBoxLayout()
+
+        self.e_ad = QLineEdit()
+        self.e_soyad = QLineEdit()
+        self.e_tc = QLineEdit()
+        self.e_dogum = QLineEdit()
+        self.e_tel = QLineEdit()
+        self.e_email = QLineEdit()
+        self.e_uzmanlik = QComboBox()
+        self.e_uzmanlik.addItems(fetch_uzmanliklar())
+        self.e_yonetici_id = QLineEdit()
+        add_button = QPushButton("Eğitimci Kaydet")
+        add_button.clicked.connect(self.add_egitimci)
+
+        form_layout = QVBoxLayout()
+        for label, widget in [
+            ("Ad", self.e_ad), ("Soyad", self.e_soyad), ("TC Kimlik No", self.e_tc),
+            ("Doğum Tarihi (YYYY-AA-GG)", self.e_dogum), ("Telefon", self.e_tel), ("Email", self.e_email),
+            ("Uzmanlık Alanı", self.e_uzmanlik), ("Yönetici ID", self.e_yonetici_id)
+        ]:
+            form_layout.addWidget(QLabel(label))
+            form_layout.addWidget(widget)
+        form_layout.addWidget(add_button)
+
+        self.egitimci_table = QTableWidget()
+        listele_btn = QPushButton("Eğitimcileri Listele")
+        listele_btn.clicked.connect(self.list_egitimci)
+
+        layout.addLayout(form_layout)
+        layout.addWidget(listele_btn)
+        layout.addWidget(self.egitimci_table)
+        tab.setLayout(layout)
+        return tab
+
+    def add_egitimci(self):
+        tc = self.e_tc.text().strip()
+        email = self.e_email.text().strip()
+        if not all([self.e_ad.text().strip(), self.e_soyad.text().strip(), tc, email]):
+            QMessageBox.warning(self, "Hata", "Tüm zorunlu alanları doldurmalısınız.")
+            return
+        if not tc.isdigit() or len(tc) != 11:
+            QMessageBox.warning(self, "Hata", "TC Kimlik Numarası 11 haneli rakamlardan oluşmalıdır.")
+            return
+        if "@" not in email:
+            QMessageBox.warning(self, "Hata", "Geçerli bir e-posta adresi giriniz.")
+            return
+
+        query = "SELECT egitimci_kaydet(%s, %s, %s, %s, %s, %s, %s, %s)"
+        params = (
+            tc, self.e_ad.text(), self.e_soyad.text(),
+            self.e_dogum.text(), self.e_tel.text(), email,
+            self.e_uzmanlik.currentText(), self.e_yonetici_id.text() or None
+        )
+        success, message = execute_function(query, params)
+        QMessageBox.information(self, "Bilgi", message)
+
+    def list_egitimci(self):
+        query = "SELECT * FROM egitimci_listele()"
+        rows = fetch_function(query)
+        self.egitimci_table.setRowCount(len(rows))
+        self.egitimci_table.setColumnCount(len(rows[0]) if rows else 0)
+        self.egitimci_table.setHorizontalHeaderLabels([
+            "ID", "Ad", "Soyad", "TC", "Doğum", "Telefon", "Email", "Uzmanlık", "Şube ID"])
+        for row_idx, row in enumerate(rows):
+            for col_idx, value in enumerate(row):
+                self.egitimci_table.setItem(row_idx, col_idx, QTableWidgetItem(str(value)))
+
+    # === Kurs Sekmesi ===
+    def yenile_kurs_combo(self, combo):
+        combo.clear()
+        for k in fetch_function("SELECT kurs_id, kurs_adi FROM kurs"):
+            combo.addItem(f"{k[1]} (ID:{k[0]})", k[0])
+
+    def yenile_kursiyer_combo(self, combo):
+        combo.clear()
+        for k in fetch_function("SELECT kursiyer_id, ad, soyad FROM kursiyer"):
+            combo.addItem(f"{k[1]} {k[2]} (ID:{k[0]})", k[0])
+
+    def yenile_egitmen_combo(self, combo):
+        combo.clear()
+        for e in fetch_function("SELECT egitimci_id, ad, soyad FROM egitimci"):
+            combo.addItem(f"{e[1]} {e[2]} (ID:{e[0]})", e[0])
+
+    def create_kurs_tab(self):
+        tab = QWidget()
+        layout = QVBoxLayout()
+
+        self.k_adi = QLineEdit()
+        self.k_aciklama = QTextEdit()
+        self.k_sure = QLineEdit()
+        self.k_baslangic = QLineEdit()
+        self.k_bitis = QLineEdit()
+        self.k_kontenjan = QLineEdit()
+        self.k_egitimci_combo = QComboBox()
+        self.yenile_egitmen_combo(self.k_egitimci_combo)
+
+        kaydet_btn = QPushButton("Kurs Oluştur")
+        kaydet_btn.clicked.connect(self.kurs_ekle)
+        listele_btn = QPushButton("Kursları Listele")
+        listele_btn.clicked.connect(self.kurslari_listele)
+
+        form = QVBoxLayout()
+        for label, widget in [
+            ("Kurs Adı", self.k_adi), ("Açıklama", self.k_aciklama),
+            ("Süre (saat)", self.k_sure), ("Başlangıç Tarihi", self.k_baslangic),
+            ("Bitiş Tarihi", self.k_bitis), ("Kontenjan", self.k_kontenjan),
+            ("Eğitimci", self.k_egitimci_combo)
+        ]:
+            form.addWidget(QLabel(label))
+            form.addWidget(widget)
+        form.addWidget(kaydet_btn)
+
+        self.kurs_table = QTableWidget()
+
+        layout.addLayout(form)
+        layout.addWidget(listele_btn)
+        layout.addWidget(self.kurs_table)
+        tab.setLayout(layout)
+        return tab
+
+    def kurs_ekle(self):
+        query = "SELECT kurs_olustur(%s, %s, %s, %s, %s, %s, %s)"
+        params = (
+            self.k_adi.text(), self.k_aciklama.toPlainText(), int(self.k_sure.text()),
+            self.k_baslangic.text(), self.k_bitis.text(),
+            int(self.k_kontenjan.text()), self.k_egitimci_combo.currentData()
+        )
+        success, message = execute_function(query, params)
+        QMessageBox.information(self, "Bilgi", message)
+
+        self.yenile_kurs_combo(self.combo_kurs_devamsizlik)
+
+    def kurslari_listele(self):
+        query = "SELECT * FROM kurs_listele()"
+        rows = fetch_function(query)
+        self.kurs_table.setRowCount(len(rows))
+        self.kurs_table.setColumnCount(len(rows[0]) if rows else 0)
+        self.kurs_table.setHorizontalHeaderLabels([
+            "ID", "Ad", "Açıklama", "Süre", "Başlangıç", "Bitiş", "Kontenjan", "Kayıtlı", "Eğitimci"])
+        for row_idx, row in enumerate(rows):
+            for col_idx, value in enumerate(row):
+                self.kurs_table.setItem(row_idx, col_idx, QTableWidgetItem(str(value)))
+
+    # === Kayıt Güncelleme Sekmesi ===
+    def create_kayit_guncelleme_tab(self):
+        tab = QWidget()
+        main_layout = QVBoxLayout()
+
+        # === Kursiyeri Kursa Kaydet Bölümü ===
+        kurs_kayit_group = QGroupBox("Kursiyeri Kursa Kaydet")
+        kurs_kayit_form = QFormLayout()
+
+        self.combo_kursiyer_kayit = QComboBox()
+        self.combo_kurs_kayit = QComboBox()
+        self.yenile_kursiyer_combo(self.combo_kursiyer_kayit)
+        self.yenile_kurs_combo(self.combo_kurs_kayit)
+
+        kurs_kayit_form.addRow("Kursiyer:", self.combo_kursiyer_kayit)
+        kurs_kayit_form.addRow("Kurs:", self.combo_kurs_kayit)
+
+        kayit_btn = QPushButton("Kursa Kaydet")
+        kayit_btn.clicked.connect(self.kaydet_kursa_katilim)
+        kurs_kayit_form.addRow(kayit_btn)
+
+        kurs_kayit_group.setLayout(kurs_kayit_form)
+        main_layout.addWidget(kurs_kayit_group)
+
+        # === Kurs Eğitmeni Güncelleme Bölümü ===
+        egitmen_guncelle_group = QGroupBox("Kurs Eğitmenini Güncelle")
+        egitmen_guncelle_form = QFormLayout()
+
+        self.combo_kurs_guncelle = QComboBox()
+        self.combo_egitmen_yeni = QComboBox()
+        self.yenile_kurs_combo(self.combo_kurs_guncelle)
+        self.yenile_egitmen_combo(self.combo_egitmen_yeni)
+
+        egitmen_guncelle_form.addRow("Kurs:", self.combo_kurs_guncelle)
+        egitmen_guncelle_form.addRow("Yeni Eğitmen:", self.combo_egitmen_yeni)
+
+        guncelle_btn = QPushButton("Eğitmeni Güncelle")
+        guncelle_btn.clicked.connect(self.guncelle_kurs_egitmeni)
+        egitmen_guncelle_form.addRow(guncelle_btn)
+
+        egitmen_guncelle_group.setLayout(egitmen_guncelle_form)
+        main_layout.addWidget(egitmen_guncelle_group)
+
+        tab.setLayout(main_layout)
+        return tab
+
+    def kaydet_kursa_katilim(self):
+        kurs_id = self.combo_kurs_kayit.currentData()
+        kursiyer_id = self.combo_kursiyer_kayit.currentData()
+
+        query = "SELECT kursiyeri_kursa_kaydet(%s, %s)"
+        success, message = execute_function(query, (kursiyer_id, kurs_id))
+        QMessageBox.information(self, "Bilgi", message)
+
+    def guncelle_kurs_egitmeni(self):
+        kurs_id = self.combo_kurs_guncelle.currentData()
+        yeni_egitmen_id = self.combo_egitmen_yeni.currentData()
+
+        query = "SELECT kurs_egitimci_guncelle(%s, %s)"
+        success, message = execute_function(query, (kurs_id, yeni_egitmen_id))
+        QMessageBox.information(self, "Bilgi", message)
+
+    # === Devamsızlık Sekmesi ===
+    def create_devamsizlik_tab(self):
+        tab = QWidget()
+        layout = QVBoxLayout()
+
+        self.combo_kurs_devamsizlik = QComboBox()
+        for k in fetch_function("SELECT kurs_id, kurs_adi FROM kurs"):
+            self.combo_kurs_devamsizlik.addItem(f"{k[1]} (ID:{k[0]})", k[0])
+
+        self.combo_kursiyer_devamsizlik = QComboBox()
+        for k in fetch_function("SELECT kursiyer_id, ad, soyad FROM kursiyer"):
+            self.combo_kursiyer_devamsizlik.addItem(f"{k[1]} {k[2]} (ID:{k[0]})", k[0])
+
+        self.d_tarih = QLineEdit()
+        self.d_durum = QComboBox()
+        self.d_durum.addItems(["Yok", "Geldi"])
+        self.d_aciklama = QTextEdit()
+
+        kaydet_btn = QPushButton("Devamsızlık Kaydet")
+        kaydet_btn.clicked.connect(self.devamsizlik_ekle)
+        listele_btn = QPushButton("Devamsızlık Listele")
+        listele_btn.clicked.connect(self.devamsizlik_listele)
+
+        form = QVBoxLayout()
+        form.addWidget(QLabel("Kurs"))
+        form.addWidget(self.combo_kurs_devamsizlik)
+        form.addWidget(QLabel("Kursiyer"))
+        form.addWidget(self.combo_kursiyer_devamsizlik)
+        form.addWidget(QLabel("Tarih (YYYY-AA-GG)"))
+        form.addWidget(self.d_tarih)
+        form.addWidget(QLabel("Durum"))
+        form.addWidget(self.d_durum)
+        form.addWidget(QLabel("Açıklama"))
+        form.addWidget(self.d_aciklama)
+        form.addWidget(kaydet_btn)
+
+        self.devamsizlik_table = QTableWidget()
+
+        layout.addLayout(form)
+        layout.addWidget(listele_btn)
+        layout.addWidget(self.devamsizlik_table)
+        tab.setLayout(layout)
+        return tab
+
+    def devamsizlik_ekle(self):
+        kurs_id = self.combo_kurs_devamsizlik.currentData()
+        kursiyer_id = self.combo_kursiyer_devamsizlik.currentData()
+        tarih = self.d_tarih.text()
+        durum = True if self.d_durum.currentText() == "Yok" else False
+        aciklama = self.d_aciklama.toPlainText()
+
+        query = "SELECT devamsizlik_ekle(%s, %s, %s, %s, %s)"
+        success, message = execute_function(query, (kursiyer_id, kurs_id, tarih, durum, aciklama))
+        QMessageBox.information(self, "Bilgi", message)
+
+    def devamsizlik_listele(self):
+        kurs_id = self.combo_kurs_devamsizlik.currentData()
+        query = "SELECT * FROM devamsizlik_listele(%s)"
+        rows = fetch_function(query, (kurs_id,))
+        self.devamsizlik_table.setRowCount(len(rows))
+        self.devamsizlik_table.setColumnCount(8)
+        self.devamsizlik_table.setHorizontalHeaderLabels([
+            "Kursiyer ID", "Ad", "Soyad", "Tarih", "Durum", "Açıklama", "Devam %", "Sonuç"
+        ])
+        for row_idx, row in enumerate(rows):
+            for col_idx, value in enumerate(row):
+                if col_idx == 4:
+                    value = "Yok" if value else "Geldi"
+                elif col_idx == 6:
+                    value = f"{value:.2f}%"
+                elif col_idx == 7:
+                    value = "✔️ Geçti" if value else "❌ Kaldı"
+
+                self.devamsizlik_table.setItem(row_idx, col_idx, QTableWidgetItem(str(value)))
+
+
+if __name__ == '__main__':
+    app = QApplication(sys.argv)
+    win = MainWindow()
+    win.show()
+    sys.exit(app.exec_())
