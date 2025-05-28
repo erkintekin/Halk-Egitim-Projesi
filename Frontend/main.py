@@ -307,6 +307,8 @@ class MainWindow(QMainWindow):
         QMessageBox.information(self, "Bilgi", message)
 
         self.yenile_kurs_combo(self.combo_kurs_devamsizlik)
+        self.yenile_kurs_combo(self.combo_kurs_kayit)
+        self.yenile_kurs_combo(self.combo_kurs_guncelle)
 
     def kurslari_listele(self):
         query = "SELECT * FROM kurs_listele()"
@@ -429,7 +431,7 @@ class MainWindow(QMainWindow):
         kurs_id = self.combo_kurs_devamsizlik.currentData()
         kursiyer_id = self.combo_kursiyer_devamsizlik.currentData()
         tarih = self.d_tarih.text()
-        durum = True if self.d_durum.currentText() == "Yok" else False
+        durum = True if self.d_durum.currentText() == "Geldi" else False
         aciklama = self.d_aciklama.toPlainText()
 
         query = "SELECT devamsizlik_ekle(%s, %s, %s, %s, %s)"
@@ -448,7 +450,7 @@ class MainWindow(QMainWindow):
         for row_idx, row in enumerate(rows):
             for col_idx, value in enumerate(row):
                 if col_idx == 4:
-                    value = "Yok" if value else "Geldi"
+                    value = "Var" if value else "Yok"
                 elif col_idx == 6:
                     value = f"{value:.2f}%"
                 elif col_idx == 7:
