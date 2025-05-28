@@ -50,7 +50,7 @@ BEGIN
         RAISE EXCEPTION 'Bu e-posta adresi zaten kayıtlı: %', p_email;
     END IF;
 
-    INSERT INTO egitimci (tc_no, ad, soyad, dogum_tarihi, telefon, email, uzmanlık_alani, yonetici_id)
+    INSERT INTO egitimci (tc_no, ad, soyad, dogum_tarihi, telefon, email, uzmanlik_alani, yonetici_id)
     VALUES (p_tc_no, p_ad, p_soyad, p_dogum_tarihi, p_telefon, p_email, p_uzmanlik, p_yonetici_id);
 END;
 $$ LANGUAGE plpgsql;

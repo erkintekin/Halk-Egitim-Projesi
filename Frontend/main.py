@@ -238,7 +238,7 @@ class MainWindow(QMainWindow):
         self.egitimci_table.setRowCount(len(rows))
         self.egitimci_table.setColumnCount(len(rows[0]) if rows else 0)
         self.egitimci_table.setHorizontalHeaderLabels([
-            "ID", "Ad", "Soyad", "TC", "Doğum", "Telefon", "Email", "Uzmanlık", "Şube ID"])
+            "ID", "Ad", "Soyad", "TC", "Doğum", "Telefon", "Email", "Uzmanlık"])
         for row_idx, row in enumerate(rows):
             for col_idx, value in enumerate(row):
                 self.egitimci_table.setItem(row_idx, col_idx, QTableWidgetItem(str(value)))
@@ -280,8 +280,8 @@ class MainWindow(QMainWindow):
         form = QVBoxLayout()
         for label, widget in [
             ("Kurs Adı", self.k_adi), ("Açıklama", self.k_aciklama),
-            ("Süre (saat)", self.k_sure), ("Başlangıç Tarihi", self.k_baslangic),
-            ("Bitiş Tarihi", self.k_bitis), ("Kontenjan", self.k_kontenjan),
+            ("Süre (saat)", self.k_sure), ("Başlangıç Tarihi (YYYY-AA-GG)", self.k_baslangic),
+            ("Bitiş Tarihi (YYYY-AA-GG)", self.k_bitis), ("Kontenjan (Max 100 kişi)", self.k_kontenjan),
             ("Eğitimci", self.k_egitimci_combo)
         ]:
             form.addWidget(QLabel(label))
@@ -314,7 +314,7 @@ class MainWindow(QMainWindow):
         self.kurs_table.setRowCount(len(rows))
         self.kurs_table.setColumnCount(len(rows[0]) if rows else 0)
         self.kurs_table.setHorizontalHeaderLabels([
-            "ID", "Ad", "Açıklama", "Süre", "Başlangıç", "Bitiş", "Kontenjan", "Kayıtlı", "Eğitimci"])
+            "ID", "Ad", "Açıklama", "Süre", "Başlangıç", "Bitiş","Kayıtlı" ,"Kontenjan", "Eğitimci"])
         for row_idx, row in enumerate(rows):
             for col_idx, value in enumerate(row):
                 self.kurs_table.setItem(row_idx, col_idx, QTableWidgetItem(str(value)))

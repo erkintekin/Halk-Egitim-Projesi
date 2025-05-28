@@ -11,7 +11,7 @@ CREATE TABLE egitimci (
     dogum_tarihi DATE NOT NULL,
     telefon VARCHAR(15) NOT NULL,
     email VARCHAR(100) UNIQUE NOT NULL,
-    uzmanlık_alani VARCHAR(100) NOT NULL,
+    uzmanlik_alani VARCHAR(100) NOT NULL,
     yonetici_id INTEGER,
     FOREIGN KEY (yonetici_id) REFERENCES egitimci(egitimci_id) ON DELETE SET NULL
 );
@@ -60,5 +60,6 @@ CREATE TABLE devamsizlik (
     tarih DATE NOT NULL,
     durum BOOLEAN NOT NULL,
     aciklama TEXT,
-    FOREIGN KEY (kursiyer_id, kurs_id) REFERENCES katilim(kursiyer_id, kurs_id) ON DELETE CASCADE
-);
+    FOREIGN KEY (kursiyer_id, kurs_id) REFERENCES katilim(kursiyer_id, kurs_id) ON DELETE CASCADE,
+    UNIQUE (kursiyer_id, kurs_id, tarih)
+);  

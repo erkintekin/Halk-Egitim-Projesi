@@ -136,6 +136,28 @@ AFTER INSERT OR DELETE ON katilim
 FOR EACH ROW
 EXECUTE FUNCTION guncelle_mevcut_kayit();
 
+CREATE OR REPLACE FUNCTION kontrol_devamsizlik_tarihi()
+RETURNS TRIGGER AS $$
+DECLARE
+    baslangic DATE;
+    bitis DATE;
+BEGIN
+    SELECT baslangic_tarihi, bitis_tarihi INTO baslangic, bitis
+    FROM kurs
+    WHERE kurs_id = NEW.kurs_id;
+
+    IF NEW.tarih < baslangic OR NEW.tarih > bitis THEN
+        RAISE EXCEPTION 'Devamsızlık tarihi kursun başlangıç ve bitiş tarihleri arasında olmalı!';
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_kontrol_devamsizlik_tarihi
+BEFORE INSERT ON devamsizlik
+FOR EACH ROW EXECUTE FUNCTION kontrol_devamsizlik_tarihi();
+
+
 
 
 
