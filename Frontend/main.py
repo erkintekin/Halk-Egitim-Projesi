@@ -152,7 +152,7 @@ class MainWindow(QMainWindow):
             QMessageBox.Yes | QMessageBox.No
         )
         if confirm == QMessageBox.Yes:
-            query = "SELECT kursiyer_sil(%s)"  # Eğer fonksiyonla yapıyorsan
+            query = "SELECT kursiyer_sil(%s)"
             success, message = execute_function(query, (kursiyer_id,))
             if success:
                 QMessageBox.information(self, "Bilgi", "Kursiyer silindi.")
