@@ -4,9 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="68e75493-4fbc-4a24-ad8c-9d443adb797c" name="Changes" comment="Devamsızlık mantığı düzeltildi, UI'da değişiklik yapıldı">
+    <list default="true" id="68e75493-4fbc-4a24-ad8c-9d443adb797c" name="Changes" comment="Devamsızlık trigger'ı güncellendi">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Backend/triggerlar.sql" beforeDir="false" afterPath="$PROJECT_DIR$/Backend/triggerlar.sql" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Frontend/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/Frontend/main.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -82,7 +82,8 @@
       <workItem from="1748296326047" duration="7143000" />
       <workItem from="1748460715812" duration="5667000" />
       <workItem from="1748467670757" duration="6951000" />
-      <workItem from="1748554598591" duration="5075000" />
+      <workItem from="1748554598591" duration="5876000" />
+      <workItem from="1748561268685" duration="320000" />
     </task>
     <task id="LOCAL-00001" summary="Halk Egitim Sistemi icin PyQt5 ile GUI yazildi">
       <option name="closed" value="true" />
@@ -164,7 +165,15 @@
       <option name="project" value="LOCAL" />
       <updated>1748560127638</updated>
     </task>
-    <option name="localTasksCounter" value="11" />
+    <task id="LOCAL-00011" summary="Devamsızlık trigger'ı güncellendi">
+      <option name="closed" value="true" />
+      <created>1748560523533</created>
+      <option name="number" value="00011" />
+      <option name="presentableId" value="LOCAL-00011" />
+      <option name="project" value="LOCAL" />
+      <updated>1748560523533</updated>
+    </task>
+    <option name="localTasksCounter" value="12" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -192,9 +201,10 @@
     <MESSAGE value="Tüm sekmelerdeki UI güncellemeleri yapıldı" />
     <MESSAGE value="Home UI güncellemesi yapıldı" />
     <MESSAGE value="Devamsızlık mantığı düzeltildi, UI'da değişiklik yapıldı" />
-    <option name="LAST_COMMIT_MESSAGE" value="Devamsızlık mantığı düzeltildi, UI'da değişiklik yapıldı" />
+    <MESSAGE value="Devamsızlık trigger'ı güncellendi" />
+    <option name="LAST_COMMIT_MESSAGE" value="Devamsızlık trigger'ı güncellendi" />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
-    <SUITE FILE_PATH="coverage/Halk_Egitim_Projesi$main.coverage" NAME="main Coverage Results" MODIFIED="1748559820539" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Frontend" />
+    <SUITE FILE_PATH="coverage/Halk_Egitim_Projesi$main.coverage" NAME="main Coverage Results" MODIFIED="1748561286827" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Frontend" />
   </component>
 </project>

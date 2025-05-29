@@ -683,10 +683,6 @@ class MainWindow(QMainWindow):
         QMessageBox.information(self, "Bilgi", message)
 
     # === Devamsızlık Sekmesi ===
-    from PyQt5.QtWidgets import QDateEdit
-    from PyQt5.QtCore import QDate
-    from PyQt5.QtGui import QColor
-
     def create_devamsizlik_tab(self):
         tab = QWidget()
         main_layout = QVBoxLayout()
@@ -753,7 +749,7 @@ class MainWindow(QMainWindow):
             }
         """)
 
-        # Değişiklik olaylarını bağla
+        # Değişiklik olaylarını bağlama
         self.combo_kursiyer_devamsizlik.currentTextChanged.connect(self.devam_durumu_goster)
         self.combo_kurs_devamsizlik.currentTextChanged.connect(self.devam_durumu_goster)
 
@@ -899,15 +895,15 @@ class MainWindow(QMainWindow):
             QMessageBox.information(self, "Başarılı", message)
             # Devam durumunu güncelle
             self.devam_durumu_goster()
-            # Listeyi otomatik yenile (isteğe bağlı)
-            # self.devamsizlik_listele()
+            # Listeyi otomatik yenileme
+            self.devamsizlik_listele()
         else:
             QMessageBox.warning(self, "Hata", message)
 
     def devamsizlik_listele(self):
         kurs_id = self.combo_kurs_devamsizlik.currentData()
         kursiyer_id = self.combo_kursiyer_devamsizlik.currentData()
-        tarih = self.d_tarih.date().toString("yyyy-MM-dd")  # QDateEdit'ten tarih al
+        tarih = self.d_tarih.date().toString("yyyy-MM-dd")
 
         if not all([kurs_id, kursiyer_id, tarih]):
             QMessageBox.warning(self, "Hata", "Lütfen zorunlu alanları doldurunuz.")
