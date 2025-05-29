@@ -266,7 +266,28 @@ class MainWindow(QMainWindow):
     # === Eğitimci Sekmesi ===
     def create_egitimci_tab(self):
         tab = QWidget()
-        layout = QVBoxLayout()
+        main_layout = QVBoxLayout()
+        main_layout.setSpacing(15)
+
+        # === Form Kutusu ===
+        form_group = QGroupBox("👨‍🏫 Eğitimci Bilgileri")
+        form_group.setStyleSheet("""
+            QGroupBox {
+                font-weight: bold;
+                font-size: 14px;
+                border: 1px solid #ccc;
+                border-radius: 6px;
+                margin-top: 10px;
+                padding: 10px;
+            }
+            QGroupBox::title {
+                subcontrol-origin: margin;
+                left: 10px;
+                top: 5px;
+            }
+        """)
+        form_layout = QFormLayout()
+        form_layout.setSpacing(10)
 
         self.e_ad = QLineEdit()
         self.e_soyad = QLineEdit()
@@ -277,32 +298,51 @@ class MainWindow(QMainWindow):
         self.e_uzmanlik = QComboBox()
         self.e_uzmanlik.addItems(fetch_uzmanliklar())
         self.e_yonetici_id = QLineEdit()
-        add_button = QPushButton("Eğitimci Kaydet")
+
+        form_layout.addRow("Ad:", self.e_ad)
+        form_layout.addRow("Soyad:", self.e_soyad)
+        form_layout.addRow("TC Kimlik No:", self.e_tc)
+        form_layout.addRow("Doğum Tarihi (YYYY-AA-GG):", self.e_dogum)
+        form_layout.addRow("Telefon:", self.e_tel)
+        form_layout.addRow("Email:", self.e_email)
+        form_layout.addRow("Uzmanlık Alanı:", self.e_uzmanlik)
+        form_layout.addRow("Yönetici ID:", self.e_yonetici_id)
+
+        add_button = QPushButton("➕ Eğitimci Kaydet")
+        add_button.setMinimumHeight(36)
+        add_button.setStyleSheet("background-color: #4CAF50; color: white; font-weight: bold;")
         add_button.clicked.connect(self.add_egitimci)
+        form_layout.addRow(add_button)
 
-        form_layout = QVBoxLayout()
-        for label, widget in [
-            ("Ad", self.e_ad), ("Soyad", self.e_soyad), ("TC Kimlik No", self.e_tc),
-            ("Doğum Tarihi (YYYY-AA-GG)", self.e_dogum), ("Telefon", self.e_tel), ("Email", self.e_email),
-            ("Uzmanlık Alanı", self.e_uzmanlik), ("Yönetici ID", self.e_yonetici_id)
-        ]:
-            form_layout.addWidget(QLabel(label))
-            form_layout.addWidget(widget)
-        form_layout.addWidget(add_button)
+        form_group.setLayout(form_layout)
+        main_layout.addWidget(form_group)
 
-        self.egitimci_table = QTableWidget()
-        listele_btn = QPushButton("Eğitimcileri Listele")
+        # === Listeleme Butonu ===
+        listele_btn = QPushButton("📄 Eğitimcileri Listele")
+        listele_btn.setMinimumHeight(36)
+        listele_btn.setStyleSheet("background-color: #2196F3; color: white; font-weight: bold;")
         listele_btn.clicked.connect(self.list_egitimci)
+        main_layout.addWidget(listele_btn)
 
-        sil_btn = QPushButton("Seçili Eğitimciyi Sil")
+        # === Tablo ===
+        self.egitimci_table = QTableWidget()
+        self.egitimci_table.setMinimumHeight(250)
+        self.egitimci_table.setStyleSheet("""
+            QTableWidget {
+                background-color: white;
+                border: 1px solid #ccc;
+            }
+        """)
+        main_layout.addWidget(self.egitimci_table)
+
+        # === Sil Butonu ===
+        sil_btn = QPushButton("🗑️ Seçili Eğitimciyi Sil")
+        sil_btn.setMinimumHeight(36)
+        sil_btn.setStyleSheet("background-color: #f44336; color: white; font-weight: bold;")
         sil_btn.clicked.connect(self.egitimci_sil)
-        
+        main_layout.addWidget(sil_btn)
 
-        layout.addLayout(form_layout)
-        layout.addWidget(listele_btn)
-        layout.addWidget(self.egitimci_table)
-        layout.addWidget(sil_btn)
-        tab.setLayout(layout)
+        tab.setLayout(main_layout)
         return tab
 
 
@@ -377,10 +417,32 @@ class MainWindow(QMainWindow):
 
     def create_kurs_tab(self):
         tab = QWidget()
-        layout = QVBoxLayout()
+        main_layout = QVBoxLayout()
+        main_layout.setSpacing(15)
+
+        # === Form Kutusu ===
+        form_group = QGroupBox("📚 Yeni Kurs Bilgileri")
+        form_group.setStyleSheet("""
+            QGroupBox {
+                font-weight: bold;
+                font-size: 14px;
+                border: 1px solid #ccc;
+                border-radius: 6px;
+                margin-top: 10px;
+                padding: 10px;
+            }
+            QGroupBox::title {
+                subcontrol-origin: margin;
+                left: 10px;
+                top: 5px;
+            }
+        """)
+        form_layout = QFormLayout()
+        form_layout.setSpacing(10)
 
         self.k_adi = QLineEdit()
         self.k_aciklama = QTextEdit()
+        self.k_aciklama.setFixedHeight(60)
         self.k_sure = QLineEdit()
         self.k_baslangic = QLineEdit()
         self.k_bitis = QLineEdit()
@@ -388,32 +450,49 @@ class MainWindow(QMainWindow):
         self.k_egitimci_combo = QComboBox()
         self.yenile_egitmen_combo(self.k_egitimci_combo)
 
-        kaydet_btn = QPushButton("Kurs Oluştur")
+        form_layout.addRow("Kurs Adı:", self.k_adi)
+        form_layout.addRow("Açıklama:", self.k_aciklama)
+        form_layout.addRow("Süre (saat):", self.k_sure)
+        form_layout.addRow("Başlangıç Tarihi (YYYY-AA-GG):", self.k_baslangic)
+        form_layout.addRow("Bitiş Tarihi (YYYY-AA-GG):", self.k_bitis)
+        form_layout.addRow("Kontenjan (1-100):", self.k_kontenjan)
+        form_layout.addRow("Eğitimci:", self.k_egitimci_combo)
+
+        kaydet_btn = QPushButton("➕ Kurs Oluştur")
+        kaydet_btn.setMinimumHeight(36)
+        kaydet_btn.setStyleSheet("background-color: #4CAF50; color: white; font-weight: bold;")
         kaydet_btn.clicked.connect(self.kurs_ekle)
-        listele_btn = QPushButton("Kursları Listele")
+        form_layout.addRow(kaydet_btn)
+
+        form_group.setLayout(form_layout)
+        main_layout.addWidget(form_group)
+
+        # === Listeleme Butonu ===
+        listele_btn = QPushButton("📄 Kursları Listele")
+        listele_btn.setMinimumHeight(36)
+        listele_btn.setStyleSheet("background-color: #2196F3; color: white; font-weight: bold;")
         listele_btn.clicked.connect(self.kurslari_listele)
+        main_layout.addWidget(listele_btn)
 
-        form = QVBoxLayout()
-        for label, widget in [
-            ("Kurs Adı", self.k_adi), ("Açıklama", self.k_aciklama),
-            ("Süre (saat)", self.k_sure), ("Başlangıç Tarihi (YYYY-AA-GG)", self.k_baslangic),
-            ("Bitiş Tarihi (YYYY-AA-GG)", self.k_bitis), ("Kontenjan (Max 100 kişi)", self.k_kontenjan),
-            ("Eğitimci", self.k_egitimci_combo)
-        ]:
-            form.addWidget(QLabel(label))
-            form.addWidget(widget)
-        form.addWidget(kaydet_btn)
-
+        # === Tablo ===
         self.kurs_table = QTableWidget()
+        self.kurs_table.setMinimumHeight(250)
+        self.kurs_table.setStyleSheet("""
+            QTableWidget {
+                background-color: white;
+                border: 1px solid #ccc;
+            }
+        """)
+        main_layout.addWidget(self.kurs_table)
 
-        layout.addLayout(form)
-        layout.addWidget(listele_btn)
-        layout.addWidget(self.kurs_table)
-        self.sil_kurs_btn = QPushButton("Seçili Kursu Sil")
+        # === Sil Butonu ===
+        self.sil_kurs_btn = QPushButton("🗑️ Seçili Kursu Sil")
+        self.sil_kurs_btn.setMinimumHeight(36)
+        self.sil_kurs_btn.setStyleSheet("background-color: #f44336; color: white; font-weight: bold;")
         self.sil_kurs_btn.clicked.connect(self.sil_kurs)
-        layout.addWidget(self.sil_kurs_btn)
-        
-        tab.setLayout(layout)
+        main_layout.addWidget(self.sil_kurs_btn)
+
+        tab.setLayout(main_layout)
         return tab
 
     def kurs_ekle(self):
@@ -462,24 +541,42 @@ class MainWindow(QMainWindow):
         # dropdown’ları da yenile
         self.yenile_kurs_combo(self.combo_kurs_devamsizlik)
 
-    # === Kayıt Güncelleme Sekmesi ===
     def create_kayit_guncelleme_tab(self):
         tab = QWidget()
         main_layout = QVBoxLayout()
+        main_layout.setSpacing(20)
 
         # === Kursiyeri Kursa Kaydet Bölümü ===
-        kurs_kayit_group = QGroupBox("Kursiyeri Kursa Kaydet")
+        kurs_kayit_group = QGroupBox("➕ Kursiyeri Kursa Kaydet")
+        kurs_kayit_group.setStyleSheet("""
+            QGroupBox {
+                font-weight: bold;
+                font-size: 14px;
+                border: 1px solid #ccc;
+                border-radius: 6px;
+                margin-top: 10px;
+                padding: 10px;
+            }
+            QGroupBox::title {
+                subcontrol-origin: margin;
+                left: 10px;
+                top: 5px;
+            }
+        """)
         kurs_kayit_form = QFormLayout()
+        kurs_kayit_form.setSpacing(10)
 
         self.combo_kursiyer_kayit = QComboBox()
         self.combo_kurs_kayit = QComboBox()
         self.yenile_kursiyer_combo(self.combo_kursiyer_kayit)
         self.yenile_kurs_combo(self.combo_kurs_kayit)
 
-        kurs_kayit_form.addRow("Kursiyer:", self.combo_kursiyer_kayit)
-        kurs_kayit_form.addRow("Kurs:", self.combo_kurs_kayit)
+        kurs_kayit_form.addRow("👤 Kursiyer:", self.combo_kursiyer_kayit)
+        kurs_kayit_form.addRow("📚 Kurs:", self.combo_kurs_kayit)
 
-        kayit_btn = QPushButton("Kursa Kaydet")
+        kayit_btn = QPushButton("✔️ Kursa Kaydet")
+        kayit_btn.setStyleSheet("background-color: #4CAF50; color: white; font-weight: bold;")
+        kayit_btn.setMinimumHeight(36)
         kayit_btn.clicked.connect(self.kaydet_kursa_katilim)
         kurs_kayit_form.addRow(kayit_btn)
 
@@ -487,18 +584,36 @@ class MainWindow(QMainWindow):
         main_layout.addWidget(kurs_kayit_group)
 
         # === Kurs Eğitmeni Güncelleme Bölümü ===
-        egitmen_guncelle_group = QGroupBox("Kurs Eğitmenini Güncelle")
+        egitmen_guncelle_group = QGroupBox("🔄 Kurs Eğitmenini Güncelle")
+        egitmen_guncelle_group.setStyleSheet("""
+            QGroupBox {
+                font-weight: bold;
+                font-size: 14px;
+                border: 1px solid #ccc;
+                border-radius: 6px;
+                margin-top: 10px;
+                padding: 10px;
+            }
+            QGroupBox::title {
+                subcontrol-origin: margin;
+                left: 10px;
+                top: 5px;
+            }
+        """)
         egitmen_guncelle_form = QFormLayout()
+        egitmen_guncelle_form.setSpacing(10)
 
         self.combo_kurs_guncelle = QComboBox()
         self.combo_egitmen_yeni = QComboBox()
         self.yenile_kurs_combo(self.combo_kurs_guncelle)
         self.yenile_egitmen_combo(self.combo_egitmen_yeni)
 
-        egitmen_guncelle_form.addRow("Kurs:", self.combo_kurs_guncelle)
-        egitmen_guncelle_form.addRow("Yeni Eğitmen:", self.combo_egitmen_yeni)
+        egitmen_guncelle_form.addRow("📘 Kurs:", self.combo_kurs_guncelle)
+        egitmen_guncelle_form.addRow("👨‍🏫 Yeni Eğitmen:", self.combo_egitmen_yeni)
 
-        guncelle_btn = QPushButton("Eğitmeni Güncelle")
+        guncelle_btn = QPushButton("📝 Eğitmeni Güncelle")
+        guncelle_btn.setStyleSheet("background-color: #FF9800; color: white; font-weight: bold;")
+        guncelle_btn.setMinimumHeight(36)
         guncelle_btn.clicked.connect(self.guncelle_kurs_egitmeni)
         egitmen_guncelle_form.addRow(guncelle_btn)
 
@@ -525,9 +640,34 @@ class MainWindow(QMainWindow):
         QMessageBox.information(self, "Bilgi", message)
 
     # === Devamsızlık Sekmesi ===
+    from PyQt5.QtWidgets import QWidget, QVBoxLayout, QGroupBox, QFormLayout, QComboBox, QLineEdit, QTextEdit, \
+        QPushButton, QTableWidget, QLabel
+
     def create_devamsizlik_tab(self):
         tab = QWidget()
-        layout = QVBoxLayout()
+        main_layout = QVBoxLayout()
+        main_layout.setSpacing(15)
+
+        # === Form Kutusu ===
+        form_group = QGroupBox("⛔ Devamsızlık Kaydı")
+        form_group.setStyleSheet("""
+            QGroupBox {
+                font-weight: bold;
+                font-size: 14px;
+                border: 1px solid #ccc;
+                border-radius: 6px;
+                margin-top: 10px;
+                padding: 10px;
+            }
+            QGroupBox::title {
+                subcontrol-origin: margin;
+                left: 10px;
+                top: 5px;
+            }
+        """)
+
+        form_layout = QFormLayout()
+        form_layout.setSpacing(10)
 
         self.combo_kurs_devamsizlik = QComboBox()
         for k in fetch_function("SELECT kurs_id, kurs_adi FROM kurs"):
@@ -541,31 +681,42 @@ class MainWindow(QMainWindow):
         self.d_durum = QComboBox()
         self.d_durum.addItems(["Yok", "Geldi"])
         self.d_aciklama = QTextEdit()
+        self.d_aciklama.setFixedHeight(50)
 
-        kaydet_btn = QPushButton("Devamsızlık Kaydet")
+        form_layout.addRow("Kurs:", self.combo_kurs_devamsizlik)
+        form_layout.addRow("Kursiyer:", self.combo_kursiyer_devamsizlik)
+        form_layout.addRow("Tarih (YYYY-AA-GG):", self.d_tarih)
+        form_layout.addRow("Durum:", self.d_durum)
+        form_layout.addRow("Açıklama:", self.d_aciklama)
+
+        kaydet_btn = QPushButton("➕ Devamsızlık Kaydet")
+        kaydet_btn.setMinimumHeight(36)
+        kaydet_btn.setStyleSheet("background-color: #4CAF50; color: white; font-weight: bold;")
         kaydet_btn.clicked.connect(self.devamsizlik_ekle)
-        listele_btn = QPushButton("Devamsızlık Listele")
+        form_layout.addRow(kaydet_btn)
+
+        form_group.setLayout(form_layout)
+        main_layout.addWidget(form_group)
+
+        # === Listeleme Butonu ===
+        listele_btn = QPushButton("📄 Devamsızlık Listele")
+        listele_btn.setMinimumHeight(36)
+        listele_btn.setStyleSheet("background-color: #2196F3; color: white; font-weight: bold;")
         listele_btn.clicked.connect(self.devamsizlik_listele)
+        main_layout.addWidget(listele_btn)
 
-        form = QVBoxLayout()
-        form.addWidget(QLabel("Kurs"))
-        form.addWidget(self.combo_kurs_devamsizlik)
-        form.addWidget(QLabel("Kursiyer"))
-        form.addWidget(self.combo_kursiyer_devamsizlik)
-        form.addWidget(QLabel("Tarih (YYYY-AA-GG)"))
-        form.addWidget(self.d_tarih)
-        form.addWidget(QLabel("Durum"))
-        form.addWidget(self.d_durum)
-        form.addWidget(QLabel("Açıklama"))
-        form.addWidget(self.d_aciklama)
-        form.addWidget(kaydet_btn)
-
+        # === Tablo ===
         self.devamsizlik_table = QTableWidget()
+        self.devamsizlik_table.setMinimumHeight(250)
+        self.devamsizlik_table.setStyleSheet("""
+            QTableWidget {
+                background-color: white;
+                border: 1px solid #ccc;
+            }
+        """)
+        main_layout.addWidget(self.devamsizlik_table)
 
-        layout.addLayout(form)
-        layout.addWidget(listele_btn)
-        layout.addWidget(self.devamsizlik_table)
-        tab.setLayout(layout)
+        tab.setLayout(main_layout)
         return tab
 
     def devamsizlik_ekle(self):
