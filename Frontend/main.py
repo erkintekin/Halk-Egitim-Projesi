@@ -6,6 +6,7 @@ from PyQt5.QtWidgets import (
     QLabel, QPushButton, QLineEdit, QTableWidget, QTableWidgetItem,
     QMessageBox, QTextEdit, QComboBox, QGroupBox, QFormLayout
 )
+from PyQt5.QtCore import Qt
 
 DB_PARAMS = {
     "host": "localhost",
@@ -54,17 +55,64 @@ class MainWindow(QMainWindow):
         self.tabs = QTabWidget()
         self.setCentralWidget(self.tabs)
 
+        # Tüm sekmeleri oluştur
         self.kursiyer_tab = self.create_kursiyer_tab()
         self.egitimci_tab = self.create_egitimci_tab()
         self.kurs_tab = self.create_kurs_tab()
         self.devamsizlik_tab = self.create_devamsizlik_tab()
         self.kayit_guncelle_tab = self.create_kayit_guncelleme_tab()
 
-        self.tabs.addTab(self.kursiyer_tab, "Kursiyer")
-        self.tabs.addTab(self.egitimci_tab, "Eğitimci")
-        self.tabs.addTab(self.kurs_tab, "Kurs")
-        self.tabs.addTab(self.devamsizlik_tab, "Devamsızlık")
-        self.tabs.addTab(self.kayit_guncelle_tab, "Kayıt/Güncelleme")
+        # Giriş paneli en üstte olacak
+        self.giris_paneli = self.create_giris_paneli()
+        self.tabs.addTab(self.giris_paneli, "🏠 Giriş")
+
+        # Diğer sekmeleri girişten sonra ekle
+        self.tabs.addTab(self.kursiyer_tab, "👤 Kursiyer")
+        self.tabs.addTab(self.egitimci_tab, "👨‍🏫 Eğitimci")
+        self.tabs.addTab(self.kurs_tab, "📚 Kurs")
+        self.tabs.addTab(self.devamsizlik_tab, "⛔ Devamsızlık")
+        self.tabs.addTab(self.kayit_guncelle_tab, "🔄 Kayıt/Güncelleme")
+
+    def create_giris_paneli(self):
+        panel = QWidget()
+        layout = QVBoxLayout()
+        layout.setSpacing(15)
+        layout.setAlignment(Qt.AlignCenter)  # tüm içeriği ortala
+
+        # === Üst boşluk (sayfanın ortasına yaklaşmak için) ===
+        layout.addStretch(1)
+
+        # === Başlık ===
+        baslik = QLabel("📋 Halk Eğitim Takip Sistemi'ne Hoş Geldiniz")
+        baslik.setAlignment(Qt.AlignCenter)
+        baslik.setStyleSheet("font-size: 20px; font-weight: bold;")
+        layout.addWidget(baslik)
+
+        alt_baslik = QLabel("Lütfen işlem yapmak istediğiniz bölümü seçin:")
+        alt_baslik.setAlignment(Qt.AlignCenter)
+        alt_baslik.setStyleSheet("font-size: 14px;")
+        layout.addWidget(alt_baslik)
+
+        # === Butonlar ===
+        buttons = [
+            ("👤 Kursiyer İşlemleri", self.kursiyer_tab),
+            ("👨‍🏫 Eğitimci İşlemleri", self.egitimci_tab),
+            ("📚 Kurs İşlemleri", self.kurs_tab),
+            ("⛔ Devamsızlık", self.devamsizlik_tab),
+            ("🔄 Kayıt/Güncelleme", self.kayit_guncelle_tab),
+        ]
+
+        for label, tab in buttons:
+            btn = QPushButton(label)
+            btn.setMinimumHeight(40)
+            btn.clicked.connect(lambda _, t=tab: self.tabs.setCurrentWidget(t))
+            layout.addWidget(btn)
+
+        # === Alt boşluk ===
+        layout.addStretch(2)
+
+        panel.setLayout(layout)
+        return panel
 
     # === Kursiyer Sekmesi ===
     def create_kursiyer_tab(self):
