@@ -100,8 +100,8 @@ class MainWindow(QMainWindow):
 
         layout.addLayout(form_layout)
         layout.addWidget(listele_btn)
-        layout.addWidget(sil_btn)
         layout.addWidget(self.kursiyer_table)
+        layout.addWidget(sil_btn)
         tab.setLayout(layout)
         return tab
 
@@ -205,9 +205,14 @@ class MainWindow(QMainWindow):
         listele_btn = QPushButton("Eğitimcileri Listele")
         listele_btn.clicked.connect(self.list_egitimci)
 
+        sil_btn = QPushButton("Seçili Eğitimciyi Sil")
+        sil_btn.clicked.connect(self.egitimci_sil)
+        
+
         layout.addLayout(form_layout)
         layout.addWidget(listele_btn)
         layout.addWidget(self.egitimci_table)
+        layout.addWidget(sil_btn)
         tab.setLayout(layout)
         return tab
 
@@ -233,6 +238,26 @@ class MainWindow(QMainWindow):
         )
         success, message = execute_function(query, params)
         QMessageBox.information(self, "Bilgi", message)
+
+    def egitimci_sil(self):
+        selected = self.egitimci_table.currentRow()
+        if selected < 0:
+            QMessageBox.warning(self, "Uyarı", "Lütfen silinecek eğitimciyi seçin.")
+            return
+        egitimci_id = self.egitimci_table.item(selected, 0).text()
+        confirm = QMessageBox.question(
+            self, "Onay", f"Eğitimci ID {egitimci_id} silinsin mi?",
+            QMessageBox.Yes | QMessageBox.No
+        )
+        if confirm == QMessageBox.Yes:
+            query = "SELECT egitimci_sil(%s)"
+            success, message = execute_function(query, (egitimci_id,))
+            if success:
+                QMessageBox.information(self, "Bilgi", "Eğitimci silindi.")
+                self.list_egitimci()
+            else:
+                QMessageBox.critical(self, "Hata", message)
+
 
     def list_egitimci(self):
         query = "SELECT * FROM egitimci_listele()"

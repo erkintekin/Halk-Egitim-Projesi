@@ -43,6 +43,22 @@ EXCEPTION
 END;
 $$ LANGUAGE plpgsql;
 
+CREATE OR REPLACE FUNCTION egitimci_sil(p_egitimci_id INTEGER)
+RETURNS TEXT AS $$
+DECLARE
+    egitimci_count INTEGER;
+BEGIN
+
+    SELECT COUNT(*) INTO egitimci_count FROM egitimci WHERE egitimci_id = p_egitimci_id;
+    IF egitimci_count = 0 THEN
+        RAISE EXCEPTION 'HATA: % ID''li eğitimci bulunamadı.', p_egitimci_id;
+    END IF;
+
+    DELETE FROM egitimci WHERE egitimci_id = p_egitimci_id;
+    RETURN 'Eğitimci başarıyla silindi.';
+END;
+$$ LANGUAGE plpgsql;
+
 
 CREATE OR REPLACE FUNCTION egitimci_kaydet(
     p_tc_no VARCHAR,
