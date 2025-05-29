@@ -1,33 +1,46 @@
+-- 1. DEVAMSIZLIK ORANI HESAPLAMA TRIGGERI
 CREATE OR REPLACE FUNCTION devamsizlik_guncelle()
 RETURNS TRIGGER AS $$
 DECLARE
     yok_yazilma INTEGER;
-    girilen_gun INTEGER;
-    katilim_yuzdesi DECIMAL(5,2);
+    toplam_ders_gunu INTEGER;
+    devam_eden_gun INTEGER;
+    devam_yuzdesi DECIMAL(5,2);
     kursiyer INTEGER;
     kurs INTEGER;
+    baslangic DATE;
+    bitis DATE;
 BEGIN
     kursiyer := CASE WHEN TG_OP = 'DELETE' THEN OLD.kursiyer_id ELSE NEW.kursiyer_id END;
     kurs := CASE WHEN TG_OP = 'DELETE' THEN OLD.kurs_id ELSE NEW.kurs_id END;
 
-    SELECT COUNT(*) INTO girilen_gun
-    FROM devamsizlik
-    WHERE kursiyer_id = kursiyer AND kurs_id = kurs;
+    -- Kursun başlangıç ve bitiş tarihlerini alma
+    SELECT baslangic_tarihi, bitis_tarihi INTO baslangic, bitis
+    FROM kurs WHERE kurs_id = kurs;
 
+    -- Toplam ders günü hesaplama (hafta sonları dahil - gerekirse filtrelenebilir??)
+    toplam_ders_gunu := bitis - baslangic + 1;
+
+    -- Yoklama kayıtlarını sayma
     SELECT COUNT(*) INTO yok_yazilma
     FROM devamsizlik
     WHERE kursiyer_id = kursiyer AND kurs_id = kurs AND durum = FALSE;
 
-    IF girilen_gun > 0 THEN
-        katilim_yuzdesi := ((girilen_gun - yok_yazilma)::DECIMAL / girilen_gun) * 100;
+    -- Devam eden gün sayısı
+    devam_eden_gun := toplam_ders_gunu - yok_yazilma;
+
+    -- Devam oranını hesapla
+    IF toplam_ders_gunu > 0 THEN
+        devam_yuzdesi := (devam_eden_gun::DECIMAL / toplam_ders_gunu) * 100;
     ELSE
-        katilim_yuzdesi := 0;
+        devam_yuzdesi := 100; -- Kurs henüz başlamamışsa %100 devamlılık
     END IF;
 
+    -- Katılım tablosunu güncelleme
     UPDATE katilim
     SET
-        devam_orani = katilim_yuzdesi,
-        devam_durumu = katilim_yuzdesi >= 70
+        devam_orani = devam_yuzdesi,
+        devam_durumu = devam_yuzdesi >= 70
     WHERE kursiyer_id = kursiyer AND kurs_id = kurs;
 
     RETURN CASE WHEN TG_OP = 'DELETE' THEN OLD ELSE NEW END;
@@ -40,6 +53,7 @@ AFTER INSERT OR UPDATE OR DELETE ON devamsizlik
 FOR EACH ROW
 EXECUTE FUNCTION devamsizlik_guncelle();
 
+-- 2. DEVAMSIZLIK TARİH KONTROL TRIGGERI
 CREATE OR REPLACE FUNCTION kontrol_devamsizlik_tarihi()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -62,6 +76,7 @@ BEFORE INSERT ON devamsizlik
 FOR EACH ROW
 EXECUTE FUNCTION kontrol_devamsizlik_tarihi();
 
+-- 3. 30 GÜN SINIRI KONTROL TRIGGERI
 CREATE OR REPLACE FUNCTION devamsizlik_kontrol()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -98,17 +113,21 @@ BEFORE INSERT OR UPDATE OR DELETE ON devamsizlik
 FOR EACH ROW
 EXECUTE FUNCTION devamsizlik_kontrol();
 
+-- 4. DEVAM DURUMU UYARI TRIGGERI
 CREATE OR REPLACE FUNCTION engelle_devamsiz_girisi()
 RETURNS TRIGGER AS $$
 DECLARE
-    devam_flag BOOLEAN;
+    mevcut_devam_orani DECIMAL(5,2);
 BEGIN
-    SELECT devam_durumu INTO devam_flag
+    -- Mevcut devam oranını alma
+    SELECT devam_orani INTO mevcut_devam_orani
     FROM katilim
     WHERE kursiyer_id = NEW.kursiyer_id AND kurs_id = NEW.kurs_id;
 
-    IF devam_flag = FALSE THEN
-        RAISE NOTICE 'Uyarı: Kursiyerin devam hakkı %%70 altına düşmüştür.';
+    -- Eğer zaten %70'in altındaysa uyarı verir
+    IF mevcut_devam_orani IS NOT NULL AND mevcut_devam_orani < 70 THEN
+        RAISE NOTICE "UYARI: Kursiyer ID % - Devam oranı zaten %%%'ye düşmüştür!",
+                     NEW.kursiyer_id, mevcut_devam_orani;
     END IF;
 
     RETURN NEW;
@@ -121,18 +140,23 @@ BEFORE INSERT ON devamsizlik
 FOR EACH ROW
 EXECUTE FUNCTION engelle_devamsiz_girisi();
 
+-- 5. MEVCUT KAYIT GÜNCELLEME TRIGGERI
 CREATE OR REPLACE FUNCTION guncelle_mevcut_kayit()
 RETURNS TRIGGER AS $$
 DECLARE
-    sayi INTEGER;
     kurs_no INTEGER;
+    yeni_sayi INTEGER;
 BEGIN
     kurs_no := CASE WHEN TG_OP = 'DELETE' THEN OLD.kurs_id ELSE NEW.kurs_id END;
 
-    SELECT COUNT(*) INTO sayi FROM katilim WHERE kurs_id = kurs_no;
+    -- Bu kursa kayıtlı toplam kursiyer sayısı
+    SELECT COUNT(*) INTO yeni_sayi 
+    FROM katilim 
+    WHERE kurs_id = kurs_no;
 
+    -- Aynı kurstaki TÜM kayıtları güncelleme
     UPDATE katilim
-    SET mevcut_kayit = sayi
+    SET mevcut_kayit = yeni_sayi
     WHERE kurs_id = kurs_no;
 
     RETURN CASE WHEN TG_OP = 'DELETE' THEN OLD ELSE NEW END;
