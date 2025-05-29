@@ -11,7 +11,7 @@ DB_PARAMS = {
     "host": "localhost",
     "database": "halk_egitim_db",
     "user": "postgres",
-    "password": "Selcuk2121.",
+    "password": "12345",
     "port": "5432"
 }
 
@@ -482,9 +482,15 @@ class MainWindow(QMainWindow):
     def devamsizlik_ekle(self):
         kurs_id = self.combo_kurs_devamsizlik.currentData()
         kursiyer_id = self.combo_kursiyer_devamsizlik.currentData()
-        tarih = self.d_tarih.text()
-        durum = True if self.d_durum.currentText() == "Geldi" else False
-        aciklama = self.d_aciklama.toPlainText()
+        tarih = self.d_tarih.text().strip()
+        durum_text = self.d_durum.currentText()
+        aciklama = self.d_aciklama.toPlainText().strip()
+
+        if not all([kurs_id, kursiyer_id, tarih, durum_text]):
+            QMessageBox.warning(self, "Hata", "Tüm alanları doldurmalısınız.")
+            return
+
+        durum = True if durum_text == "Geldi" else False
 
         query = "SELECT devamsizlik_ekle(%s, %s, %s, %s, %s)"
         success, message = execute_function(query, (kursiyer_id, kurs_id, tarih, durum, aciklama))
@@ -492,8 +498,15 @@ class MainWindow(QMainWindow):
 
     def devamsizlik_listele(self):
         kurs_id = self.combo_kurs_devamsizlik.currentData()
-        query = "SELECT * FROM devamsizlik_listele(%s)"
-        rows = fetch_function(query, (kurs_id,))
+        kursiyer_id = self.combo_kursiyer_devamsizlik.currentData()
+        tarih = self.d_tarih.text().strip()
+
+        if not all([kurs_id, kursiyer_id, tarih]):
+            QMessageBox.warning(self, "Hata", "Lütfen zorunlu alanları doldurunuz.")
+            return
+
+        query = "SELECT * FROM devamsizlik_listele(%s, %s, %s)"
+        rows = fetch_function(query, (kurs_id, kursiyer_id, tarih))
         self.devamsizlik_table.setRowCount(len(rows))
         self.devamsizlik_table.setColumnCount(8)
         self.devamsizlik_table.setHorizontalHeaderLabels([
@@ -507,7 +520,6 @@ class MainWindow(QMainWindow):
                     value = f"{value:.2f}%"
                 elif col_idx == 7:
                     value = "✔️ Geçti" if value else "❌ Kaldı"
-
                 self.devamsizlik_table.setItem(row_idx, col_idx, QTableWidgetItem(str(value)))
 
 
