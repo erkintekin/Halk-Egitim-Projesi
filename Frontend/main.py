@@ -3,10 +3,11 @@ import sys
 import psycopg2
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QTabWidget,
-    QLabel, QPushButton, QLineEdit, QTableWidget, QTableWidgetItem,
+    QLabel, QPushButton, QLineEdit, QDateEdit, QTableWidget, QTableWidgetItem,
     QMessageBox, QTextEdit, QComboBox, QGroupBox, QFormLayout, QHBoxLayout
 )
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt,QDate
+from PyQt5.QtGui import QColor
 
 DB_PARAMS = {
     "host": "localhost",
@@ -682,6 +683,10 @@ class MainWindow(QMainWindow):
         QMessageBox.information(self, "Bilgi", message)
 
     # === Devamsızlık Sekmesi ===
+    from PyQt5.QtWidgets import QDateEdit
+    from PyQt5.QtCore import QDate
+    from PyQt5.QtGui import QColor
+
     def create_devamsizlik_tab(self):
         tab = QWidget()
         main_layout = QVBoxLayout()
@@ -716,15 +721,46 @@ class MainWindow(QMainWindow):
         for k in fetch_function("SELECT kursiyer_id, ad, soyad FROM kursiyer"):
             self.combo_kursiyer_devamsizlik.addItem(f"{k[1]} {k[2]} (ID:{k[0]})", k[0])
 
-        self.d_tarih = QLineEdit()
+        # Hızlı Tarih Girişi - QDateEdit kullanımı
+        self.d_tarih = QDateEdit()
+        self.d_tarih.setDate(QDate.currentDate())
+        self.d_tarih.setDisplayFormat("yyyy-MM-dd")
+        self.d_tarih.setCalendarPopup(True)
+        self.d_tarih.setStyleSheet("""
+            QDateEdit {
+                padding: 5px;
+                font-size: 12px;
+                border: 1px solid #ccc;
+                border-radius: 4px;
+            }
+        """)
+
         self.d_durum = QComboBox()
         self.d_durum.addItems(["Yok", "Geldi"])
         self.d_aciklama = QTextEdit()
         self.d_aciklama.setFixedHeight(50)
 
+        # Anlık Devam Oranı Göstergesi
+        self.devam_durumu_label = QLabel("Devam Durumu: Kurs ve kursiyer seçin")
+        self.devam_durumu_label.setStyleSheet("""
+            QLabel {
+                font-size: 12px;
+                font-weight: bold;
+                padding: 8px;
+                border-radius: 4px;
+                background-color: #f0f0f0;
+                border: 1px solid #ddd;
+            }
+        """)
+
+        # Değişiklik olaylarını bağla
+        self.combo_kursiyer_devamsizlik.currentTextChanged.connect(self.devam_durumu_goster)
+        self.combo_kurs_devamsizlik.currentTextChanged.connect(self.devam_durumu_goster)
+
         form_layout.addRow("Kurs:", self.combo_kurs_devamsizlik)
         form_layout.addRow("Kursiyer:", self.combo_kursiyer_devamsizlik)
-        form_layout.addRow("Tarih (YYYY-AA-GG):", self.d_tarih)
+        form_layout.addRow("", self.devam_durumu_label)  # Devam durumu göstergesi
+        form_layout.addRow("Tarih:", self.d_tarih)
         form_layout.addRow("Durum:", self.d_durum)
         form_layout.addRow("Açıklama:", self.d_aciklama)
 
@@ -758,10 +794,95 @@ class MainWindow(QMainWindow):
         tab.setLayout(main_layout)
         return tab
 
+    def devam_durumu_goster(self):
+        """Seçilen kursiyer ve kurs için anlık devam durumunu gösterir"""
+        kurs_id = self.combo_kurs_devamsizlik.currentData()
+        kursiyer_id = self.combo_kursiyer_devamsizlik.currentData()
+
+        if not kurs_id or not kursiyer_id:
+            self.devam_durumu_label.setText("Devam Durumu: Kurs ve kursiyer seçin")
+            self.devam_durumu_label.setStyleSheet("""
+                QLabel {
+                    background-color: #f0f0f0;
+                    color: #666;
+                    font-weight: bold;
+                    padding: 8px;
+                    border-radius: 4px;
+                    border: 1px solid #ddd;
+                }
+            """)
+            return
+
+        try:
+            result = fetch_function(
+                "SELECT devam_orani, devam_durumu FROM katilim WHERE kursiyer_id = %s AND kurs_id = %s",
+                (kursiyer_id, kurs_id)
+            )
+
+            if result and len(result) > 0:
+                oran, durum = result[0]
+                if oran is not None:
+                    # Renk ve durum belirleme
+                    if durum:  # %70 ve üzeri
+                        renk = "#28a745"  # Yeşil
+                        durum_text = "✅ Güvenli"
+                        text_color = "white"
+                    else:  # %70 altı
+                        renk = "#dc3545"  # Kırmızı
+                        durum_text = "⚠️ RİSKLİ"
+                        text_color = "white"
+
+                    self.devam_durumu_label.setText(f"Devam Oranı: %{oran:.1f} ({durum_text})")
+                    self.devam_durumu_label.setStyleSheet(f"""
+                        QLabel {{
+                            background-color: {renk};
+                            color: {text_color};
+                            font-weight: bold;
+                            padding: 8px;
+                            border-radius: 4px;
+                            border: 2px solid {renk};
+                        }}
+                    """)
+                else:
+                    self.devam_durumu_label.setText("Devam Durumu: Henüz devamsızlık verisi yok")
+                    self.devam_durumu_label.setStyleSheet("""
+                        QLabel {
+                            background-color: #ffc107;
+                            color: #212529;
+                            font-weight: bold;
+                            padding: 8px;
+                            border-radius: 4px;
+                            border: 1px solid #ffc107;
+                        }
+                    """)
+            else:
+                self.devam_durumu_label.setText("Devam Durumu: Bu kursiyer bu kursa kayıtlı değil!")
+                self.devam_durumu_label.setStyleSheet("""
+                    QLabel {
+                        background-color: #6c757d;
+                        color: white;
+                        font-weight: bold;
+                        padding: 8px;
+                        border-radius: 4px;
+                        border: 1px solid #6c757d;
+                    }
+                """)
+        except Exception as e:
+            self.devam_durumu_label.setText(f"Hata: {str(e)}")
+            self.devam_durumu_label.setStyleSheet("""
+                QLabel {
+                    background-color: #dc3545;
+                    color: white;
+                    font-weight: bold;
+                    padding: 8px;
+                    border-radius: 4px;
+                }
+            """)
+
     def devamsizlik_ekle(self):
         kurs_id = self.combo_kurs_devamsizlik.currentData()
         kursiyer_id = self.combo_kursiyer_devamsizlik.currentData()
-        tarih = self.d_tarih.text().strip()
+        tarih = self.d_tarih.date().toString("yyyy-MM-dd")  # QDateEdit'ten tarih al
         durum_text = self.d_durum.currentText()
         aciklama = self.d_aciklama.toPlainText().strip()
 
@@ -773,12 +894,20 @@ class MainWindow(QMainWindow):
 
         query = "SELECT devamsizlik_ekle(%s, %s, %s, %s, %s)"
         success, message = execute_function(query, (kursiyer_id, kurs_id, tarih, durum, aciklama))
-        QMessageBox.information(self, "Bilgi", message)
+
+        if success:
+            QMessageBox.information(self, "Başarılı", message)
+            # Devam durumunu güncelle
+            self.devam_durumu_goster()
+            # Listeyi otomatik yenile (isteğe bağlı)
+            # self.devamsizlik_listele()
+        else:
+            QMessageBox.warning(self, "Hata", message)
 
     def devamsizlik_listele(self):
         kurs_id = self.combo_kurs_devamsizlik.currentData()
         kursiyer_id = self.combo_kursiyer_devamsizlik.currentData()
-        tarih = self.d_tarih.text().strip()
+        tarih = self.d_tarih.date().toString("yyyy-MM-dd")  # QDateEdit'ten tarih al
 
         if not all([kurs_id, kursiyer_id, tarih]):
             QMessageBox.warning(self, "Hata", "Lütfen zorunlu alanları doldurunuz.")
@@ -791,15 +920,34 @@ class MainWindow(QMainWindow):
         self.devamsizlik_table.setHorizontalHeaderLabels([
             "Kursiyer ID", "Ad", "Soyad", "Tarih", "Durum", "Açıklama", "Devam %", "Sonuç"
         ])
+
         for row_idx, row in enumerate(rows):
             for col_idx, value in enumerate(row):
-                if col_idx == 4:
-                    value = "Var" if value else "Yok"
-                elif col_idx == 6:
-                    value = f"{value:.2f}%"
-                elif col_idx == 7:
-                    value = "✔️ Geçti" if value else "❌ Kaldı"
+                if col_idx == 4:  # Durum sütunu
+                    value = "✅ Geldi" if value else "❌ Yok"
+                elif col_idx == 6:  # Devam oranı - Renk kodlaması
+                    if value is not None:
+                        item = QTableWidgetItem(f"{value:.1f}%")
+                        if value < 70:
+                            item.setBackground(QColor(255, 200, 200))  # Açık kırmızı
+                            item.setForeground(QColor(139, 0, 0))  # Koyu kırmızı
+                        elif value < 80:
+                            item.setBackground(QColor(255, 255, 200))  # Sarı
+                            item.setForeground(QColor(139, 69, 19))  # Kahverengi
+                        else:
+                            item.setBackground(QColor(200, 255, 200))  # Yeşil
+                            item.setForeground(QColor(0, 100, 0))  # Koyu yeşil
+                        self.devamsizlik_table.setItem(row_idx, col_idx, item)
+                        continue
+                    else:
+                        value = "N/A"
+                elif col_idx == 7:  # Sonuç
+                    value = "✔️ Geçer (%70+)" if value else "❌ Riskli (%70-)"
+
                 self.devamsizlik_table.setItem(row_idx, col_idx, QTableWidgetItem(str(value)))
+
+        # Tablo sütunlarını otomatik boyutlandır
+        self.devamsizlik_table.resizeColumnsToContents()
 
 
 if __name__ == '__main__':
