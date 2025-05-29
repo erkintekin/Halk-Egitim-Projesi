@@ -117,7 +117,28 @@ class MainWindow(QMainWindow):
     # === Kursiyer Sekmesi ===
     def create_kursiyer_tab(self):
         tab = QWidget()
-        layout = QVBoxLayout()
+        main_layout = QVBoxLayout()
+        main_layout.setSpacing(15)
+
+        # === Form Kutusu ===
+        form_group = QGroupBox("🧾 Kursiyer Bilgileri")
+        form_group.setStyleSheet("""
+            QGroupBox {
+                font-weight: bold;
+                font-size: 14px;
+                border: 1px solid #ccc;
+                border-radius: 6px;
+                margin-top: 10px;
+                padding: 10px;
+            }
+            QGroupBox::title {
+                subcontrol-origin: margin;
+                left: 10px;
+                top: 5px;
+            }
+        """)
+        form_layout = QFormLayout()
+        form_layout.setSpacing(10)
 
         self.k_ad = QLineEdit()
         self.k_soyad = QLineEdit()
@@ -126,31 +147,51 @@ class MainWindow(QMainWindow):
         self.k_tel = QLineEdit()
         self.k_email = QLineEdit()
         self.k_adres = QTextEdit()
-        add_button = QPushButton("Kursiyer Kaydet")
+        self.k_adres.setFixedHeight(60)
+
+        form_layout.addRow("Ad:", self.k_ad)
+        form_layout.addRow("Soyad:", self.k_soyad)
+        form_layout.addRow("TC Kimlik No:", self.k_tc)
+        form_layout.addRow("Doğum Tarihi (YYYY-AA-GG):", self.k_dogum)
+        form_layout.addRow("Telefon:", self.k_tel)
+        form_layout.addRow("Email:", self.k_email)
+        form_layout.addRow("Adres:", self.k_adres)
+
+        add_button = QPushButton("➕ Kursiyer Kaydet")
+        add_button.setMinimumHeight(36)
+        add_button.setStyleSheet("background-color: #4CAF50; color: white; font-weight: bold;")
         add_button.clicked.connect(self.add_kursiyer)
+        form_layout.addRow(add_button)
 
-        form_layout = QVBoxLayout()
-        for label, widget in [
-            ("Ad", self.k_ad), ("Soyad", self.k_soyad), ("TC Kimlik No", self.k_tc),
-            ("Doğum Tarihi (YYYY-AA-GG)", self.k_dogum), ("Telefon", self.k_tel),
-            ("Email", self.k_email), ("Adres", self.k_adres)
-        ]:
-            form_layout.addWidget(QLabel(label))
-            form_layout.addWidget(widget)
-        form_layout.addWidget(add_button)
+        form_group.setLayout(form_layout)
+        main_layout.addWidget(form_group)
 
-        self.kursiyer_table = QTableWidget()
-        listele_btn = QPushButton("Kursiyerleri Listele")
+        # === Listeleme Butonu ===
+        listele_btn = QPushButton("📄 Kursiyerleri Listele")
+        listele_btn.setMinimumHeight(36)
+        listele_btn.setStyleSheet("background-color: #2196F3; color: white; font-weight: bold;")
         listele_btn.clicked.connect(self.list_kursiyer)
+        main_layout.addWidget(listele_btn)
 
-        sil_btn = QPushButton("Seçili Kursiyeri Sil")
+        # === Tablo ===
+        self.kursiyer_table = QTableWidget()
+        self.kursiyer_table.setMinimumHeight(250)
+        self.kursiyer_table.setStyleSheet("""
+            QTableWidget {
+                background-color: white;
+                border: 1px solid #ccc;
+            }
+        """)
+        main_layout.addWidget(self.kursiyer_table)
+
+        # === Sil Butonu ===
+        sil_btn = QPushButton("🗑️ Seçili Kursiyeri Sil")
+        sil_btn.setMinimumHeight(36)
+        sil_btn.setStyleSheet("background-color: #f44336; color: white; font-weight: bold;")
         sil_btn.clicked.connect(self.kursiyer_sil)
+        main_layout.addWidget(sil_btn)
 
-        layout.addLayout(form_layout)
-        layout.addWidget(listele_btn)
-        layout.addWidget(self.kursiyer_table)
-        layout.addWidget(sil_btn)
-        tab.setLayout(layout)
+        tab.setLayout(main_layout)
         return tab
 
     def add_kursiyer(self):
