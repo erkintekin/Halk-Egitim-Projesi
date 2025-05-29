@@ -11,7 +11,7 @@ DB_PARAMS = {
     "host": "localhost",
     "database": "halk_egitim_db",
     "user": "postgres",
-    "password": "12345",
+    "password": "Selcuk2121.",
     "port": "5432"
 }
 
@@ -30,6 +30,7 @@ def execute_function(query, params=()):
 def fetch_uzmanliklar():
     query = "SELECT ad FROM uzmanlik ORDER BY ad"
     return [row[0] for row in fetch_function(query)]
+
 
 def fetch_function(query, params=()):
     try:
@@ -210,6 +211,7 @@ class MainWindow(QMainWindow):
         tab.setLayout(layout)
         return tab
 
+
     def add_egitimci(self):
         tc = self.e_tc.text().strip()
         email = self.e_email.text().strip()
@@ -293,6 +295,10 @@ class MainWindow(QMainWindow):
         layout.addLayout(form)
         layout.addWidget(listele_btn)
         layout.addWidget(self.kurs_table)
+        self.sil_kurs_btn = QPushButton("Seçili Kursu Sil")
+        self.sil_kurs_btn.clicked.connect(self.sil_kurs)
+        layout.addWidget(self.sil_kurs_btn)
+        
         tab.setLayout(layout)
         return tab
 
@@ -309,7 +315,7 @@ class MainWindow(QMainWindow):
         self.yenile_kurs_combo(self.combo_kurs_devamsizlik)
         self.yenile_kurs_combo(self.combo_kurs_kayit)
         self.yenile_kurs_combo(self.combo_kurs_guncelle)
-
+    
     def kurslari_listele(self):
         query = "SELECT * FROM kurs_listele()"
         rows = fetch_function(query)
@@ -320,6 +326,27 @@ class MainWindow(QMainWindow):
         for row_idx, row in enumerate(rows):
             for col_idx, value in enumerate(row):
                 self.kurs_table.setItem(row_idx, col_idx, QTableWidgetItem(str(value)))
+    def sil_kurs(self):
+        selected = self.kurs_table.currentRow()
+        kurs_id = self.kurs_table.item(selected, 0).text()
+        if not kurs_id.isdigit():
+            QMessageBox.warning(self, "Uyarı", "Lütfen silinecek kursu seçin.")
+            return
+        confirm = QMessageBox.question(
+        self, "Onay", f"Kurs ID {kurs_id} silinsin mi?",
+        QMessageBox.Yes | QMessageBox.No
+    )
+        if confirm == QMessageBox.Yes:
+            query = "SELECT sil_kurs(%s)"
+            success, message = execute_function(query, (kurs_id,))
+            if success:
+                QMessageBox.information(self, "Bilgi", "Kurs silindi.")
+            else:
+                QMessageBox.critical(self, "Hata", message)
+        
+        self.kurslari_listele()
+        # dropdown’ları da yenile
+        self.yenile_kurs_combo(self.combo_kurs_devamsizlik)
 
     # === Kayıt Güncelleme Sekmesi ===
     def create_kayit_guncelleme_tab(self):

@@ -25,6 +25,35 @@ BEGIN
     VALUES (p_tc_no, p_ad, p_soyad, p_dogum_tarihi, p_telefon, p_email, p_adres, CURRENT_DATE);
 END;
 $$ LANGUAGE plpgsql;
+CREATE OR REPLACE FUNCTION KursSil(kurs_id INT)
+RETURNS VOID AS $$
+BEGIN
+
+    DELETE FROM devamsizlik WHERE kurs_id = kurs_id;
+
+    DELETE FROM katilim WHERE kurs_id = kurs_id;
+
+    DELETE FROM kurs WHERE kurs.kurs_id = kurs_id;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION sil_kurs(p_kurs_id INTEGER)
+RETURNS TEXT AS $$
+DECLARE
+BEGIN
+    DELETE FROM katilim WHERE kurs_id = p_kurs_id;
+
+    DELETE FROM devamsizlik WHERE kurs_id = p_kurs_id;
+    
+    DELETE FROM kurs WHERE kurs_id = p_kurs_id;
+
+    RETURN 'Kurs başarıyla silindi.';
+EXCEPTION
+    WHEN OTHERS THEN
+        RETURN 'Kurs silinemedi: ' || SQLERRM;
+END;
+$$ LANGUAGE plpgsql;
+
 
 CREATE OR REPLACE FUNCTION egitimci_kaydet(
     p_tc_no VARCHAR,
