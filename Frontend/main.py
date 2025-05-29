@@ -4,7 +4,7 @@ import psycopg2
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QTabWidget,
     QLabel, QPushButton, QLineEdit, QTableWidget, QTableWidgetItem,
-    QMessageBox, QTextEdit, QComboBox, QGroupBox, QFormLayout
+    QMessageBox, QTextEdit, QComboBox, QGroupBox, QFormLayout, QHBoxLayout
 )
 from PyQt5.QtCore import Qt
 
@@ -55,18 +55,18 @@ class MainWindow(QMainWindow):
         self.tabs = QTabWidget()
         self.setCentralWidget(self.tabs)
 
-        # Tüm sekmeleri oluştur
+        # Tüm sekmeler
         self.kursiyer_tab = self.create_kursiyer_tab()
         self.egitimci_tab = self.create_egitimci_tab()
         self.kurs_tab = self.create_kurs_tab()
         self.devamsizlik_tab = self.create_devamsizlik_tab()
         self.kayit_guncelle_tab = self.create_kayit_guncelleme_tab()
 
-        # Giriş paneli en üstte olacak
+        # Giriş paneli
         self.giris_paneli = self.create_giris_paneli()
         self.tabs.addTab(self.giris_paneli, "🏠 Giriş")
 
-        # Diğer sekmeleri girişten sonra ekle
+        # Diğer sekmeler
         self.tabs.addTab(self.kursiyer_tab, "👤 Kursiyer")
         self.tabs.addTab(self.egitimci_tab, "👨‍🏫 Eğitimci")
         self.tabs.addTab(self.kurs_tab, "📚 Kurs")
@@ -76,25 +76,54 @@ class MainWindow(QMainWindow):
     def create_giris_paneli(self):
         panel = QWidget()
         layout = QVBoxLayout()
-        layout.setSpacing(15)
-        layout.setAlignment(Qt.AlignCenter)  # tüm içeriği ortala
+        layout.setSpacing(20)
+        layout.setAlignment(Qt.AlignTop)
 
-        # === Üst boşluk (sayfanın ortasına yaklaşmak için) ===
         layout.addStretch(1)
 
-        # === Başlık ===
+        # === Hoş geldiniz kutusu ===
+        hosgeldin_box = QGroupBox()
+        hosgeldin_layout = QVBoxLayout()
+        hosgeldin_box.setStyleSheet("""
+            QGroupBox {
+                background-color: #f8f8f8;
+                border: 1px solid #dcdcdc;
+                border-radius: 10px;
+                padding: 20px;
+            }
+        """)
+
         baslik = QLabel("📋 Halk Eğitim Takip Sistemi'ne Hoş Geldiniz")
         baslik.setAlignment(Qt.AlignCenter)
-        baslik.setStyleSheet("font-size: 20px; font-weight: bold;")
-        layout.addWidget(baslik)
+        baslik.setStyleSheet("font-size: 20px; font-weight: bold; color: #333;")
 
         alt_baslik = QLabel("Lütfen işlem yapmak istediğiniz bölümü seçin:")
         alt_baslik.setAlignment(Qt.AlignCenter)
-        alt_baslik.setStyleSheet("font-size: 14px;")
-        layout.addWidget(alt_baslik)
+        alt_baslik.setStyleSheet("font-size: 14px; color: #666;")
 
-        # === Butonlar ===
-        buttons = [
+        hosgeldin_layout.addWidget(baslik)
+        hosgeldin_layout.addWidget(alt_baslik)
+        hosgeldin_box.setLayout(hosgeldin_layout)
+
+        layout.addWidget(hosgeldin_box)
+
+        # === Ortak buton ayarları ===
+        button_stylesheet = """
+            QPushButton {
+                background-color: #e0e0e0;
+                border: 1px solid #bdbdbd;
+                border-radius: 8px;
+                padding: 10px;
+                font-size: 14px;
+                min-width: 200px;
+                max-width: 200px;
+            }
+            QPushButton:hover {
+                background-color: #d5d5d5;
+            }
+        """
+
+        button_labels = [
             ("👤 Kursiyer İşlemleri", self.kursiyer_tab),
             ("👨‍🏫 Eğitimci İşlemleri", self.egitimci_tab),
             ("📚 Kurs İşlemleri", self.kurs_tab),
@@ -102,14 +131,27 @@ class MainWindow(QMainWindow):
             ("🔄 Kayıt/Güncelleme", self.kayit_guncelle_tab),
         ]
 
-        for label, tab in buttons:
+        for label, tab in button_labels:
             btn = QPushButton(label)
-            btn.setMinimumHeight(40)
+            btn.setFixedSize(200, 45)
+            btn.setStyleSheet(button_stylesheet)
             btn.clicked.connect(lambda _, t=tab: self.tabs.setCurrentWidget(t))
-            layout.addWidget(btn)
 
-        # === Alt boşluk ===
-        layout.addStretch(2)
+            btn_wrapper = QHBoxLayout()
+            btn_wrapper.addStretch()
+            btn_wrapper.addWidget(btn)
+            btn_wrapper.addStretch()
+            layout.addLayout(btn_wrapper)
+
+        layout.addStretch(1)
+
+        # === Katkı yazısı (sağ alt) ===
+        contributors_layout = QHBoxLayout()
+        contributors_layout.addStretch()
+        contributors = QLabel("24574588 Erkin Tekin | 24574582 Selçuk Tunalı")
+        contributors.setStyleSheet("font-size: 11px; color: gray;")
+        contributors_layout.addWidget(contributors)
+        layout.addLayout(contributors_layout)
 
         panel.setLayout(layout)
         return panel
@@ -640,9 +682,6 @@ class MainWindow(QMainWindow):
         QMessageBox.information(self, "Bilgi", message)
 
     # === Devamsızlık Sekmesi ===
-    from PyQt5.QtWidgets import QWidget, QVBoxLayout, QGroupBox, QFormLayout, QComboBox, QLineEdit, QTextEdit, \
-        QPushButton, QTableWidget, QLabel
-
     def create_devamsizlik_tab(self):
         tab = QWidget()
         main_layout = QVBoxLayout()
