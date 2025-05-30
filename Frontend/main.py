@@ -614,7 +614,7 @@ class MainWindow(QMainWindow):
         kurs_kayit_form.addRow("👤 Kursiyer:", self.combo_kursiyer_kayit)
         kurs_kayit_form.addRow("📚 Kurs:", self.combo_kurs_kayit)
 
-        kayit_btn = QPushButton("✔️ Kursa Kaydet")
+        kayit_btn = QPushButton("📝 Kursa Kaydet")
         kayit_btn.setStyleSheet("background-color: #4CAF50; color: white; font-weight: bold;")
         kayit_btn.setMinimumHeight(36)
         kayit_btn.clicked.connect(self.kaydet_kursa_katilim)

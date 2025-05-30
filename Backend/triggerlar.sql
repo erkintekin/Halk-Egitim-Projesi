@@ -126,7 +126,7 @@ BEGIN
 
     -- %70'in altındaysa uyarı verme
     IF mevcut_devam_orani IS NOT NULL AND mevcut_devam_orani < 70 THEN
-        RAISE NOTICE "UYARI: Kursiyer ID % - Devam oranı zaten %%%'ye düşmüştür!",
+        RAISE NOTICE 'UYARI: Kursiyer ID % - Devam oranı zaten %%%''ye düşmüştür!',
                      NEW.kursiyer_id, mevcut_devam_orani;
     END IF;
 
