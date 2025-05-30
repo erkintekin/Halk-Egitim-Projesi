@@ -1,0 +1,13 @@
+1.
+     - `egitimci` kendi içinde `yonetici_id` ile döngüsel bir ilişki olacak.
+     - `kurs` → `egitimci` (bir kursun bir eğitimcisi var).
+     - `katilim` → `kursiyer` ve `kurs` (bir katılım kaydı bir kursiyere ve bir kursa bağlı).
+     - `devamsizlik` → `katilim` (bir devamsızlık kaydı bir katılım kaydına bağlı).
+2. **Notlar**:
+   - Birleşik foreign key (`devamsizlik` → `katilim`), (kursiyer_id, kurs_id)` şeklinde.
+3. **İlişkiler**:
+  - `egitimci.yonetici_id` → `egitimci.egitimci_id` (döngüsel).
+  - `kurs.egitimci_id` → `egitimci.egitimci_id`.
+  - `katilim.kursiyer_id` → `kursiyer.kursiyer_id`.
+  - `katilim.kurs_id` → `kurs.kurs_id`.
+  - `devamsizlik.(kursiyer_id, kurs_id)` → `katilim.(kursiyer_id, kurs_id)`.
