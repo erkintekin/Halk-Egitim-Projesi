@@ -124,7 +124,7 @@ BEGIN
     FROM katilim
     WHERE kursiyer_id = NEW.kursiyer_id AND kurs_id = NEW.kurs_id;
 
-    -- Eğer zaten %70'in altındaysa uyarı verir
+    -- %70'in altındaysa uyarı verme
     IF mevcut_devam_orani IS NOT NULL AND mevcut_devam_orani < 70 THEN
         RAISE NOTICE "UYARI: Kursiyer ID % - Devam oranı zaten %%%'ye düşmüştür!",
                      NEW.kursiyer_id, mevcut_devam_orani;

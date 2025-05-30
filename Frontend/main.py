@@ -914,7 +914,6 @@ class MainWindow(QMainWindow):
         kurs_id = self.combo_kurs_devamsizlik.currentData()
         tarih = self.d_tarih.date().toString("yyyy-MM-dd")
 
-        # Parametrenin INTEGER ve DATE olduğundan emin ol
         try:
             kurs_id = int(kurs_id) if kurs_id is not None else None
         except (ValueError, TypeError):
@@ -929,7 +928,6 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, "Hata", "Lütfen geçerli bir tarih seçiniz.")
             return
 
-        # Yeni fonksiyonu çağır
         query = "SELECT * FROM devamsizlik_listele(%s::INTEGER, %s::DATE)"
         rows = fetch_function(query, (kurs_id, tarih))
 
@@ -978,7 +976,6 @@ class MainWindow(QMainWindow):
         kurs_id = self.combo_kurs_devamsizlik.currentData()
         kursiyer_id = self.combo_kursiyer_devamsizlik.currentData()
 
-        # Parametrelerin INTEGER olduğundan emin ol
         try:
             kurs_id = int(kurs_id) if kurs_id is not None else None
             kursiyer_id = int(kursiyer_id) if kursiyer_id is not None else None
@@ -990,7 +987,6 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, "Hata", "Lütfen kurs ve kursiyer seçiniz.")
             return
 
-        # Sorguda açıkça tip dönüşümü yap
         query = "SELECT * FROM devamsizlik_listele_kisi(%s::INTEGER, %s::INTEGER)"
         rows = fetch_function(query, (kurs_id, kursiyer_id))
 

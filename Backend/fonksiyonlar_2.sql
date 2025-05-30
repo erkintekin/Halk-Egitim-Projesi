@@ -91,7 +91,6 @@ RETURNS TABLE (
 BEGIN
     RETURN QUERY
     WITH kursiyer_devamsizlik AS (
-        -- Her kursiyerin belirtilen tarihe kadarki devamsızlık kayıtlarını al
         SELECT
             k.kursiyer_id AS kursiyer_id,
             k.ad AS ad,
