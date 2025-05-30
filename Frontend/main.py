@@ -6,7 +6,7 @@ from PyQt5.QtWidgets import (
     QLabel, QPushButton, QLineEdit, QDateEdit, QTableWidget, QTableWidgetItem,
     QMessageBox, QTextEdit, QComboBox, QGroupBox, QFormLayout, QHBoxLayout
 )
-from PyQt5.QtCore import Qt,QDate
+from PyQt5.QtCore import Qt, QDate
 from PyQt5.QtGui import QColor
 
 DB_PARAMS = {
@@ -32,7 +32,6 @@ def execute_function(query, params=()):
 def fetch_uzmanliklar():
     query = "SELECT ad FROM uzmanlik ORDER BY ad"
     return [row[0] for row in fetch_function(query)]
-
 
 def fetch_function(query, params=()):
     try:
@@ -388,7 +387,6 @@ class MainWindow(QMainWindow):
         tab.setLayout(main_layout)
         return tab
 
-
     def add_egitimci(self):
         tc = self.e_tc.text().strip()
         email = self.e_email.text().strip()
@@ -429,7 +427,6 @@ class MainWindow(QMainWindow):
                 self.list_egitimci()
             else:
                 QMessageBox.critical(self, "Hata", message)
-
 
     def list_egitimci(self):
         query = "SELECT * FROM egitimci_listele()"
@@ -551,38 +548,38 @@ class MainWindow(QMainWindow):
         self.yenile_kurs_combo(self.combo_kurs_devamsizlik)
         self.yenile_kurs_combo(self.combo_kurs_kayit)
         self.yenile_kurs_combo(self.combo_kurs_guncelle)
-    
+
     def kurslari_listele(self):
         query = "SELECT * FROM kurs_listele()"
         rows = fetch_function(query)
         self.kurs_table.setRowCount(len(rows))
         self.kurs_table.setColumnCount(len(rows[0]) if rows else 0)
         self.kurs_table.setHorizontalHeaderLabels([
-            "ID", "Ad", "Açıklama", "Süre", "Başlangıç", "Bitiş","Kayıtlı" ,"Kontenjan", "Eğitimci"])
+            "ID", "Ad", "Açıklama", "Süre", "Başlangıç", "Bitiş", "Kayıtlı", "Kontenjan", "Eğitimci"])
         for row_idx, row in enumerate(rows):
             for col_idx, value in enumerate(row):
                 self.kurs_table.setItem(row_idx, col_idx, QTableWidgetItem(str(value)))
+
     def sil_kurs(self):
         selected = self.kurs_table.currentRow()
-        kurs_id = self.kurs_table.item(selected, 0).text()
-        if not kurs_id.isdigit():
+        if selected < 0:
             QMessageBox.warning(self, "Uyarı", "Lütfen silinecek kursu seçin.")
             return
+        kurs_id = self.kurs_table.item(selected, 0).text()
         confirm = QMessageBox.question(
-        self, "Onay", f"Kurs ID {kurs_id} silinsin mi?",
-        QMessageBox.Yes | QMessageBox.No
-    )
+            self, "Onay", f"Kurs ID {kurs_id} silinsin mi?",
+            QMessageBox.Yes | QMessageBox.No
+        )
         if confirm == QMessageBox.Yes:
             query = "SELECT sil_kurs(%s)"
             success, message = execute_function(query, (kurs_id,))
             if success:
                 QMessageBox.information(self, "Bilgi", "Kurs silindi.")
+                self.kurslari_listele()
+                # dropdown’ları da yenile
+                self.yenile_kurs_combo(self.combo_kurs_devamsizlik)
             else:
                 QMessageBox.critical(self, "Hata", message)
-        
-        self.kurslari_listele()
-        # dropdown’ları da yenile
-        self.yenile_kurs_combo(self.combo_kurs_devamsizlik)
 
     def create_kayit_guncelleme_tab(self):
         tab = QWidget()
@@ -769,12 +766,25 @@ class MainWindow(QMainWindow):
         form_group.setLayout(form_layout)
         main_layout.addWidget(form_group)
 
-        # === Listeleme Butonu ===
+        # === Butonlar için Yatay Düzen ===
+        buttons_layout = QHBoxLayout()
+        buttons_layout.setSpacing(10)
+
+        # Genel Devamsızlık Listele Butonu
         listele_btn = QPushButton("📄 Devamsızlık Listele")
         listele_btn.setMinimumHeight(36)
         listele_btn.setStyleSheet("background-color: #2196F3; color: white; font-weight: bold;")
         listele_btn.clicked.connect(self.devamsizlik_listele)
-        main_layout.addWidget(listele_btn)
+        buttons_layout.addWidget(listele_btn)
+
+        # Kişi Bazlı Devamsızlık Listele Butonu
+        kisi_listele_btn = QPushButton("👤 Kişi Bazlı Devamsızlık")
+        kisi_listele_btn.setMinimumHeight(36)
+        kisi_listele_btn.setStyleSheet("background-color: #3F51B5; color: white; font-weight: bold;")
+        kisi_listele_btn.clicked.connect(self.devamsizlik_listele_kisi)
+        buttons_layout.addWidget(kisi_listele_btn)
+
+        main_layout.addLayout(buttons_layout)
 
         # === Tablo ===
         self.devamsizlik_table = QTableWidget()
@@ -902,15 +912,93 @@ class MainWindow(QMainWindow):
 
     def devamsizlik_listele(self):
         kurs_id = self.combo_kurs_devamsizlik.currentData()
-        kursiyer_id = self.combo_kursiyer_devamsizlik.currentData()
         tarih = self.d_tarih.date().toString("yyyy-MM-dd")
 
-        if not all([kurs_id, kursiyer_id, tarih]):
-            QMessageBox.warning(self, "Hata", "Lütfen zorunlu alanları doldurunuz.")
+        # Parametrenin INTEGER ve DATE olduğundan emin ol
+        try:
+            kurs_id = int(kurs_id) if kurs_id is not None else None
+        except (ValueError, TypeError):
+            QMessageBox.warning(self, "Hata", "Lütfen geçerli bir kurs seçiniz.")
             return
 
-        query = "SELECT * FROM devamsizlik_listele(%s, %s, %s)"
-        rows = fetch_function(query, (kurs_id, kursiyer_id, tarih))
+        if not kurs_id:
+            QMessageBox.warning(self, "Hata", "Lütfen bir kurs seçiniz.")
+            return
+
+        if not tarih:
+            QMessageBox.warning(self, "Hata", "Lütfen geçerli bir tarih seçiniz.")
+            return
+
+        # Yeni fonksiyonu çağır
+        query = "SELECT * FROM devamsizlik_listele(%s::INTEGER, %s::DATE)"
+        rows = fetch_function(query, (kurs_id, tarih))
+
+        if not rows:
+            QMessageBox.information(self, "Bilgi", f"Seçilen kurs ve tarihe kadar devamsızlık kaydı bulunmamaktadır.")
+            self.devamsizlik_table.setRowCount(0)
+            return
+
+        self.devamsizlik_table.setRowCount(len(rows))
+        self.devamsizlik_table.setColumnCount(8)
+        self.devamsizlik_table.setHorizontalHeaderLabels([
+            "Kursiyer ID", "Ad", "Soyad", "Devam %", "Durum", "Son Tarih", "Son Durum", "Son Açıklama"
+        ])
+
+        for row_idx, row in enumerate(rows):
+            for col_idx, value in enumerate(row):
+                if col_idx == 3:  # Devam oranı
+                    if value is not None:
+                        item = QTableWidgetItem(f"{value:.1f}%")
+                        if value < 70:
+                            item.setBackground(QColor(255, 200, 200))  # Açık kırmızı
+                            item.setForeground(QColor(139, 0, 0))  # Koyu kırmızı
+                        elif value < 80:
+                            item.setBackground(QColor(255, 255, 200))  # Sarı
+                            item.setForeground(QColor(139, 69, 19))  # Kahverengi
+                        else:
+                            item.setBackground(QColor(200, 255, 200))  # Yeşil
+                            item.setForeground(QColor(0, 100, 0))  # Koyu yeşil
+                        self.devamsizlik_table.setItem(row_idx, col_idx, item)
+                        continue
+                    else:
+                        value = "N/A"
+                elif col_idx == 4:  # Devam durumu
+                    value = "✔️ Geçer (%70+)" if value else "❌ Riskli (%70-)" if value is not None else "N/A"
+                elif col_idx == 6:  # Son durum
+                    value = "✅ Geldi" if value else "❌ Yok" if value is not None else "N/A"
+                elif col_idx == 7:  # Son açıklama
+                    value = value if value else "Yok"
+
+                self.devamsizlik_table.setItem(row_idx, col_idx, QTableWidgetItem(str(value)))
+
+        # Tablo sütunlarını otomatik boyutlandırma
+        self.devamsizlik_table.resizeColumnsToContents()
+
+    def devamsizlik_listele_kisi(self):
+        kurs_id = self.combo_kurs_devamsizlik.currentData()
+        kursiyer_id = self.combo_kursiyer_devamsizlik.currentData()
+
+        # Parametrelerin INTEGER olduğundan emin ol
+        try:
+            kurs_id = int(kurs_id) if kurs_id is not None else None
+            kursiyer_id = int(kursiyer_id) if kursiyer_id is not None else None
+        except (ValueError, TypeError):
+            QMessageBox.warning(self, "Hata", "Geçerli bir kurs ve kursiyer seçiniz.")
+            return
+
+        if not all([kurs_id, kursiyer_id]):
+            QMessageBox.warning(self, "Hata", "Lütfen kurs ve kursiyer seçiniz.")
+            return
+
+        # Sorguda açıkça tip dönüşümü yap
+        query = "SELECT * FROM devamsizlik_listele_kisi(%s::INTEGER, %s::INTEGER)"
+        rows = fetch_function(query, (kurs_id, kursiyer_id))
+
+        if not rows:
+            QMessageBox.information(self, "Bilgi", "Seçilen kursiyerin bu kursta devamsızlık kaydı bulunmamaktadır.")
+            self.devamsizlik_table.setRowCount(0)
+            return
+
         self.devamsizlik_table.setRowCount(len(rows))
         self.devamsizlik_table.setColumnCount(8)
         self.devamsizlik_table.setHorizontalHeaderLabels([
@@ -942,9 +1030,8 @@ class MainWindow(QMainWindow):
 
                 self.devamsizlik_table.setItem(row_idx, col_idx, QTableWidgetItem(str(value)))
 
-        # Tablo sütunlarını otomatik boyutlandır
+        # Tablo sütunlarını otomatik boyutlandırma
         self.devamsizlik_table.resizeColumnsToContents()
-
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
