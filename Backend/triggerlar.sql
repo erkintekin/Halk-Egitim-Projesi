@@ -7,16 +7,17 @@ DECLARE
     devam_eden_gun INTEGER;
     devam_yuzdesi DECIMAL(5,2);
     kursiyer INTEGER;
-    kurs INTEGER;
+    kurs_id_no INTEGER;
     baslangic DATE;
     bitis DATE;
 BEGIN
     kursiyer := CASE WHEN TG_OP = 'DELETE' THEN OLD.kursiyer_id ELSE NEW.kursiyer_id END;
-    kurs := CASE WHEN TG_OP = 'DELETE' THEN OLD.kurs_id ELSE NEW.kurs_id END;
+    kurs_id_no := CASE WHEN TG_OP = 'DELETE' THEN OLD.kurs_id ELSE NEW.kurs_id END;
 
     -- Kursun başlangıç ve bitiş tarihlerini alma
-    SELECT baslangic_tarihi, bitis_tarihi INTO baslangic, bitis
-    FROM kurs WHERE kurs_id = kurs;
+    SELECT k.baslangic_tarihi, k.bitis_tarihi INTO baslangic, bitis
+    FROM kurs k
+    WHERE k.kurs_id = kurs_id_no;
 
     -- Toplam ders günü hesaplama (hafta sonları dahil - gerekirse filtrelenebilir??)
     toplam_ders_gunu := bitis - baslangic + 1;
@@ -24,7 +25,7 @@ BEGIN
     -- Yoklama kayıtlarını sayma
     SELECT COUNT(*) INTO yok_yazilma
     FROM devamsizlik
-    WHERE kursiyer_id = kursiyer AND kurs_id = kurs AND durum = FALSE;
+    WHERE kursiyer_id = kursiyer AND kurs_id = kurs_id_no AND durum = FALSE;
 
     -- Devam eden gün sayısı
     devam_eden_gun := toplam_ders_gunu - yok_yazilma;
@@ -41,7 +42,7 @@ BEGIN
     SET
         devam_orani = devam_yuzdesi,
         devam_durumu = devam_yuzdesi >= 70
-    WHERE kursiyer_id = kursiyer AND kurs_id = kurs;
+    WHERE kursiyer_id = kursiyer AND kurs_id = kurs_id_no;
 
     RETURN CASE WHEN TG_OP = 'DELETE' THEN OLD ELSE NEW END;
 END;
@@ -52,6 +53,7 @@ CREATE TRIGGER devamsizlik_trigger
 AFTER INSERT OR UPDATE OR DELETE ON devamsizlik
 FOR EACH ROW
 EXECUTE FUNCTION devamsizlik_guncelle();
+
 
 -- 2. DEVAMSIZLIK TARİH KONTROL TRIGGERI
 CREATE OR REPLACE FUNCTION kontrol_devamsizlik_tarihi()

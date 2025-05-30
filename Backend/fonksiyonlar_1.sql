@@ -163,7 +163,7 @@ BEGIN
         RAISE EXCEPTION 'HATA: % ID''li kursiyer zaten % ID''li kursa kayıtlı!', p_kursiyer_id, p_kurs_id;
     END IF;
 	
-	SELECT kontenjan INTO max_kontenjan FROM kurs WHERE kurs_id = p_kurs_id;
+	SELECT k.kontenjan INTO max_kontenjan FROM kurs k WHERE k.kurs_id = p_kurs_id;
     SELECT COUNT(*) INTO mevcut_kayit FROM katilim WHERE kurs_id = p_kurs_id;
 
     IF mevcut_kayit >= max_kontenjan THEN
@@ -244,24 +244,24 @@ BEGIN
         SELECT 1 FROM katilim
         WHERE kursiyer_id = p_kursiyer_id AND kurs_id = p_kurs_id
     ) THEN
-        RAISE EXCEPTION 'Kursiyer (%), belirtilen kursa kayıtlı değil.', p_kursiyer_id;
+        RAISE EXCEPTION USING MESSAGE = format('Kursiyer (%s), belirtilen kursa kayıtlı değil.', p_kursiyer_id);
     END IF;
 
-    SELECT durum INTO v_var FROM devamsizlik
-    WHERE kursiyer_id = p_kursiyer_id AND kurs_id = p_kurs_id AND tarih = p_tarih;
+    SELECT d.durum INTO v_var FROM devamsizlik d
+    WHERE d.kursiyer_id = p_kursiyer_id AND d.kurs_id = p_kurs_id AND d.tarih = p_tarih;
 
     IF FOUND THEN
         IF v_var = p_durum THEN
             IF p_durum THEN
-                RAISE EXCEPTION 'Kursiyer (%), belirtilen günde zaten gelmiştir.', p_kursiyer_id;
+                RAISE EXCEPTION USING MESSAGE = format('Kursiyer (%s), belirtilen günde zaten gelmiştir.', p_kursiyer_id);
             ELSE
-                RAISE EXCEPTION 'Kursiyer (%), belirtilen günde zaten gelmemiştir.', p_kursiyer_id;
+                RAISE EXCEPTION USING MESSAGE = format('Kursiyer (%s), belirtilen günde zaten gelmemiştir.', p_kursiyer_id);
             END IF;
         ELSE
-            UPDATE devamsizlik
+            UPDATE devamsizlik d
             SET durum = p_durum,
                 aciklama = p_aciklama
-            WHERE kursiyer_id = p_kursiyer_id AND kurs_id = p_kurs_id AND tarih = p_tarih;
+            WHERE d.kursiyer_id = p_kursiyer_id AND d.kurs_id = p_kurs_id AND d.tarih = p_tarih;
         END IF;
     ELSE
         INSERT INTO devamsizlik (kursiyer_id, kurs_id, tarih, durum, aciklama)
@@ -269,6 +269,7 @@ BEGIN
     END IF;
 END;
 $$ LANGUAGE plpgsql;
+
 
 
 
